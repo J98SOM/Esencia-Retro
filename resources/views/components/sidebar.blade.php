@@ -52,6 +52,13 @@
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">analytics</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Reportes</span>
         </a>
+
+        <!-- Rental Tab -->
+        <a href="{{ route('admin.alquiler') }}" 
+           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.alquiler') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+            <span class="material-symbols-outlined group-hover:scale-110 transition-transform">celebration</span>
+            <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Alquiler Salón</span>
+        </a>
     </nav>
 
     <!-- Bottom Profile & Settings -->

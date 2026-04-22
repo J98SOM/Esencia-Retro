@@ -95,6 +95,7 @@
             body.sidebar-collapsed .nav-link { justify-content: flex-start; padding-left: 1rem; padding-right: 1rem; }
         }
     </style>
+    @stack('styles')
 </head>
 <body class="flex min-h-screen selection:bg-primary/30 selection:text-primary">
     <!-- Sidebar Component -->
@@ -264,5 +265,6 @@
             if (e.target === modalOverlay) closeModals();
         });
     </script>
+    @stack('scripts')
 </body>
 </html>
