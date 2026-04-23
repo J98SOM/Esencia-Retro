@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -199,7 +201,8 @@
         @stack('modals')
 
     </div>
-
+    
+    @stack('scripts')
     <script>
         const modalOverlay = document.getElementById('modal-overlay');
 
@@ -265,6 +268,5 @@
             if (e.target === modalOverlay) closeModals();
         });
     </script>
-    @stack('scripts')
 </body>
 </html>

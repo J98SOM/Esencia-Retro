@@ -4,7 +4,7 @@
 
 {{-- CSS dedicado a esta vista --}}
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/alquiler.css') }}">
+    @vite(['resources/css/alquiler.css'])
 @endpush
 
 @section('content')
@@ -313,7 +313,3 @@
 </div>{{-- /page --}}
 @endsection
 
-{{-- JS dedicado a esta vista --}}
-@push('scripts')
-    <script src="{{ asset('js/alquiler.js') }}"></script>
-@endpush

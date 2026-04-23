@@ -201,3 +201,10 @@ function guardarFactura() {
 function imprimirFactura() {
     window.print();
 }
+
+// --- EXPORTAR FUNCIONES AL OBJETO GLOBAL WINDOW ---
+window.onCantidadItemsChange = onCantidadItemsChange;
+window.calcularFila = calcularFila;
+window.limpiarFormulario = limpiarFormulario;
+window.guardarFactura = guardarFactura;
+window.imprimirFactura = imprimirFactura;

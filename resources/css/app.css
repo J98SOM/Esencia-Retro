@@ -9,3 +9,19 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+@media print {
+    /* Ocultar elementos que no queremos imprimir */
+    .no-print, 
+    #sidebar, 
+    footer, 
+    .modal-overlay,
+    .btn-acciones-container {
+        display: none !important;
+    }
+
+    /* Ajustar el contenedor principal para que ocupe toda la hoja */
+    main#main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+}
