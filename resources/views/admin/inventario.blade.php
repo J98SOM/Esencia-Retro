@@ -47,61 +47,8 @@
                             <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-outline text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5">
-                        <tr class="hover:bg-white/[0.02] transition-colors group">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                        <span class="material-symbols-outlined">inventory_2</span>
-                                    </div>
-                                    <span class="font-semibold text-on-surface">Papas Fritas</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 font-mono text-sm">25.0 kg</td>
-                            <td class="px-6 py-4 font-mono text-sm">10.0 kg</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-secondary-container/20 text-secondary-fixed-dim uppercase tracking-wider">Óptimo</span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="openModal('modal-edit-insumo')" class="text-xs font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-all">Actualizar</button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-white/[0.02] transition-colors group">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                        <span class="material-symbols-outlined">inventory_2</span>
-                                    </div>
-                                    <span class="font-semibold text-on-surface">Carne de Res</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 font-mono text-sm inline-flex text-error border-b border-dashed border-error/50">8.0 kg</td>
-                            <td class="px-6 py-4 font-mono text-sm">10.0 kg</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-error-container/20 text-error uppercase tracking-wider">Crítico</span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="openModal('modal-edit-insumo')" class="text-xs font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-all">Actualizar</button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-white/[0.02] transition-colors group">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                        <span class="material-symbols-outlined">inventory_2</span>
-                                    </div>
-                                    <span class="font-semibold text-on-surface">Pan de Hamburguesa</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 font-mono text-sm">120.0 und</td>
-                            <td class="px-6 py-4 font-mono text-sm">50.0 und</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-secondary-container/20 text-secondary-fixed-dim uppercase tracking-wider">Óptimo</span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="openModal('modal-edit-insumo')" class="text-xs font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-all">Actualizar</button>
-                            </td>
-                        </tr>
+                    <tbody id="inventarios-body" class="divide-y divide-white/5">
+                        <tr id="inventarios-loading"><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando insumos…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -132,62 +79,8 @@
                 </h3>
             </div>
             
-            <div class="flex-1 overflow-auto p-6 space-y-6">
-                <!-- Log Entry -->
-                <div class="flex gap-4">
-                    <div class="mt-1 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                        <span class="material-symbols-outlined text-green-400 text-sm">add</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start mb-0.5">
-                            <p class="text-sm font-bold text-on-surface truncate">Carne de res</p>
-                            <span class="text-[10px] font-mono text-outline">14:20</span>
-                        </div>
-                        <p class="text-xs text-on-surface-variant font-medium">+15.0 kg <span class="text-[10px] opacity-60 ml-2">Ingreso de proveedor</span></p>
-                    </div>
-                </div>
-
-                <!-- Log Entry -->
-                <div class="flex gap-4">
-                    <div class="mt-1 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                        <span class="material-symbols-outlined text-red-400 text-sm">remove</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start mb-0.5">
-                            <p class="text-sm font-bold text-on-surface truncate">Papas fritas</p>
-                            <span class="text-[10px] font-mono text-outline">13:45</span>
-                        </div>
-                        <p class="text-xs text-on-surface-variant font-medium">-10.5 kg <span class="text-[10px] opacity-60 ml-2">Consumo ventas</span></p>
-                    </div>
-                </div>
-
-                <!-- Log Entry -->
-                <div class="flex gap-4">
-                    <div class="mt-1 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                        <span class="material-symbols-outlined text-red-400 text-sm">remove</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start mb-0.5">
-                            <p class="text-sm font-bold text-on-surface truncate">Pan de Hamburguesa</p>
-                            <span class="text-[10px] font-mono text-outline">12:30</span>
-                        </div>
-                        <p class="text-xs text-on-surface-variant font-medium">-24 und <span class="text-[10px] opacity-60 ml-2">Consumo ventas</span></p>
-                    </div>
-                </div>
-
-                <!-- Log Entry -->
-                <div class="flex gap-4">
-                    <div class="mt-1 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                        <span class="material-symbols-outlined text-green-400 text-sm">add</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start mb-0.5">
-                            <p class="text-sm font-bold text-on-surface truncate">Aceite Vegetal</p>
-                            <span class="text-[10px] font-mono text-outline">09:15</span>
-                        </div>
-                        <p class="text-xs text-on-surface-variant font-medium">+20.0 L <span class="text-[10px] opacity-60 ml-2">Ingreso bodega</span></p>
-                    </div>
-                </div>
+            <div id="movimientos-list" class="flex-1 overflow-auto p-6 space-y-6">
+                <!-- movimientos will be injected here -->
             </div>
             
             <button class="m-6 p-3 bg-surface-container-highest/50 hover:bg-surface-container-highest text-xs font-bold text-outline hover:text-white rounded-xl transition-all border border-white/5 uppercase tracking-widest">
@@ -206,15 +99,17 @@
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
-        <form class="space-y-4">
+        <form id="form-add-insumo" class="space-y-4">
             <div>
                 <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Nombre del Insumo</label>
                 <input type="text" name="nombre" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Ej. Tomates frescos" required>
+                <p class="text-xs text-error mt-1 field-error" data-field="nombre"></p>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Stock Inicial</label>
                     <input type="number" step="0.1" name="stock" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="0.00" required>
+                    <p class="text-xs text-error mt-1 field-error" data-field="stock"></p>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Unidad de Medida</label>
@@ -223,11 +118,19 @@
                         <option value="L">Litros (L)</option>
                         <option value="und">Unidades (und)</option>
                     </select>
+                    <p class="text-xs text-error mt-1 field-error" data-field="unidad"></p>
                 </div>
             </div>
             <div>
                 <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Stock Mínimo (Alerta)</label>
                 <input type="number" name="stock_min" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="0.00">
+                    <p class="text-xs text-error mt-1 field-error" data-field="stock_min"></p>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Descuento Inventario (%)</label>
+                <input type="number" step="0.01" min="0" name="descuento" value="0"
+                    class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="0">
+                    <p class="text-xs text-error mt-1 field-error" data-field="descuento"></p>
             </div>
             <div class="flex gap-3 pt-4 border-t border-white/10 mt-6">
                 <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
@@ -236,29 +139,396 @@
         </form>
     </div>
 
-    <!-- Actualizar Stock Modal -->
-    <div id="modal-edit-insumo" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 text-center">
-        <h3 class="text-xl font-black text-white mb-2">Actualizar Stock</h3>
-        <p class="text-sm text-primary mb-6">Carne de res (Premium)</p>
-        
-        <div class="flex items-center justify-center gap-6 mb-8">
-            <button class="w-12 h-12 rounded-full bg-surface-container-highest border border-white/10 hover:bg-error/20 hover:text-error hover:border-error/50 transition-colors flex items-center justify-center text-xl font-bold">
-                <span class="material-symbols-outlined">remove</span>
-            </button>
-            <div class="text-center">
-                <span class="text-3xl font-black text-white">45.5</span>
-                <span class="text-sm text-slate-500 ml-1">kg</span>
+    <!-- Actualizar Insumo Modal (Editar todos los campos) -->
+    <div id="modal-edit-insumo" class="modal-content hidden bg-surface-container-low border border-white/10 p-6 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
+        <h3 class="text-xl font-black text-white mb-2">Editar Insumo</h3>
+        <form id="form-edit-insumo" class="space-y-4">
+            <input type="hidden" name="id" id="edit-insumo-id">
+            <div>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Nombre del Insumo</label>
+                <input id="edit-insumo-nombre" name="nombre" type="text" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary" required>
+                <p class="text-xs text-error mt-1 field-error" data-field="nombre"></p>
             </div>
-            <button class="w-12 h-12 rounded-full bg-surface-container-highest border border-white/10 hover:bg-emerald-500/20 hover:text-emerald-400 hover:border-emerald-500/50 transition-colors flex items-center justify-center text-xl font-bold">
-                <span class="material-symbols-outlined">add</span>
-            </button>
-        </div>
-
-        <div class="flex gap-3">
-            <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
-            <button type="button" onclick="closeModals()" class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm">Confirmar</button>
-        </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Stock Actual</label>
+                    <input id="edit-insumo-stock" name="stock_inicial" type="number" step="0.1" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary" required>
+                    <p class="text-xs text-error mt-1 field-error" data-field="stock_inicial"></p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Stock Mínimo</label>
+                    <input id="edit-insumo-stock-min" name="stock_minimo" type="number" step="0.1" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
+                    <p class="text-xs text-error mt-1 field-error" data-field="stock_minimo"></p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Unidad</label>
+                    <select id="edit-insumo-unidad" name="unidad_medida" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary appearance-none">
+                        <option value="kg">kg</option>
+                        <option value="L">L</option>
+                        <option value="und">und</option>
+                    </select>
+                    <p class="text-xs text-error mt-1 field-error" data-field="unidad_medida"></p>
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Descuento Inventario (%)</label>
+                <input id="edit-insumo-descuento" name="descuento_inventario" type="number" step="0.01" min="0" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
+                <p class="text-xs text-error mt-1 field-error" data-field="descuento_inventario"></p>
+            </div>
+            <div class="flex gap-3 pt-4 border-t border-white/10 mt-4">
+                <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
+                <button type="submit" id="edit-insumo-submit" class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm">Guardar cambios</button>
+            </div>
+        </form>
     </div>
+@endpush
+
+@push('scripts')
+<script>
+(function(){
+    function apiBase(){ return (window.VITE_API_URL || window.API_BASE || '/api').replace(/\/$/, ''); }
+    const body = document.getElementById('inventarios-body');
+    const loadingRow = document.getElementById('inventarios-loading');
+    const searchInput = document.querySelector('header input[placeholder="Buscar insumo..."]');
+    const criticalCountEl = document.querySelector('.text-4xl.font-black.text-error');
+
+    function fmtQty(value, unidad){
+        if (unidad === 'und' || unidad === 'und.') return `${Number(value).toFixed(0)} und`;
+        if (!unidad) return `${Number(value)} `;
+        return `${Number(value)} ${unidad}`;
+    }
+
+    function renderRow(item){
+        const id = item.id;
+        const nombre = item.nombre || '';
+        const stock = Number(item.stock_inicial || 0);
+        const stock_min = Number(item.stock_minimo || 0);
+        const unidad = item.unidad_medida || '';
+        const isCritical = stock < stock_min;
+
+        return `
+        <tr class="hover:bg-white/[0.02] transition-colors group" data-id="${id}">
+            <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined">inventory_2</span>
+                    </div>
+                    <span class="font-semibold text-on-surface">${nombre}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 font-mono text-sm ${isCritical? 'text-error border-b border-dashed border-error/50':''}">${fmtQty(stock, unidad)}</td>
+            <td class="px-6 py-4 font-mono text-sm">${fmtQty(stock_min, unidad)}</td>
+            <td class="px-6 py-4 text-center">
+                ${isCritical ? `<span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-error-container/20 text-error uppercase tracking-wider">Crítico</span>` : `<span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-secondary-container/20 text-secondary-fixed-dim uppercase tracking-wider">Óptimo</span>`}
+            </td>
+            <td class="px-6 py-4 text-right">
+                <button data-action="edit" data-id="${id}" class="text-xs font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-all">Actualizar</button>
+                <button data-action="delete" data-id="${id}" class="ml-2 text-xs font-bold text-error hover:text-white bg-error/10 hover:bg-error px-3 py-1.5 rounded-lg transition-all">Eliminar</button>
+            </td>
+        </tr>
+        `;
+    }
+
+    async function fetchInventarios(){
+        if (!body) return;
+        body.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">Cargando insumos…</td></tr>';
+        try{
+            const token = localStorage.getItem('auth_token');
+            const headers = { 'Accept':'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const res = await fetch(apiBase() + '/inventarios', { headers });
+            if (res.status === 401){ body.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-red-400">No autorizado</td></tr>'; return; }
+            if (!res.ok) throw new Error('Error cargando inventarios');
+            const data = await res.json();
+            const list = Array.isArray(data.data) ? data.data : data;
+            if (!list || !list.length){ cacheSet([]); body.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">No hay insumos.</td></tr>'; updateCriticalCount(0); return; }
+            cacheSet(list);
+            body.innerHTML = list.map(renderRow).join('');
+            updateCriticalCount(list.filter(i=> Number(i.stock_inicial||0) < Number(i.stock_minimo||0)).length);
+        }catch(err){
+            console.error(err);
+            body.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-red-400">Error cargando insumos</td></tr>';
+        }
+    }
+
+    function updateCriticalCount(n){ if (criticalCountEl) criticalCountEl.textContent = String(n).padStart(2,'0'); }
+
+    // search handler
+    if (searchInput){
+        let t = null;
+        searchInput.addEventListener('input', ()=>{
+            clearTimeout(t);
+            t = setTimeout(async ()=>{
+                const q = searchInput.value.trim();
+                if (!q){ fetchInventarios(); return; }
+                try{
+                    const token = localStorage.getItem('auth_token');
+                    const headers = { 'Accept':'application/json' };
+                    if (token) headers['Authorization'] = 'Bearer ' + token;
+                    const res = await fetch(apiBase() + '/inventarios?q=' + encodeURIComponent(q), { headers });
+                    if (!res.ok) throw new Error('search error');
+                    const data = await res.json();
+                    const list = Array.isArray(data.data) ? data.data : data;
+                    if (!list || !list.length){ cacheSet([]); body.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-slate-400">No hay insumos.</td></tr>'; updateCriticalCount(0); return; }
+                    cacheSet(list);
+                    body.innerHTML = list.map(renderRow).join('');
+                    updateCriticalCount(list.filter(i=> Number(i.stock_inicial||0) < Number(i.stock_minimo||0)).length);
+                }catch(e){ console.error(e); }
+            }, 300);
+        });
+    }
+
+    // delegate actions (edit/delete)
+    document.addEventListener('click', async function(ev){
+        const btn = ev.target.closest && ev.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        const id = btn.getAttribute('data-id');
+        if (action === 'delete'){
+            if (!confirm('Eliminar insumo? Esta acción no se puede revertir.')) return;
+            try{
+                const token = localStorage.getItem('auth_token');
+                const headers = { 'Accept':'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                // capture current row values for movement record
+                const row = document.querySelector('tr[data-id="'+id+'"]');
+                let qtyText = '';
+                if (row) {
+                    const qtyTd = row.querySelectorAll('td')[1];
+                    qtyText = qtyTd ? qtyTd.textContent.trim() : '';
+                }
+                const res = await fetch(apiBase() + '/inventarios/' + id, { method: 'DELETE', headers });
+                if (res.status === 204 || res.ok){
+                    // record removal movement using available qty text
+                    recordMovimiento({ tipo: 'out', nombre: row ? row.querySelector('td span.font-semibold').textContent.trim() : 'Insumo', cantidad_text: qtyText, motivo: 'Eliminación' });
+                    fetchInventarios();
+                    return;
+                }
+                const bodyErr = await res.json().catch(()=>({}));
+                alert(bodyErr.message || 'Error eliminando');
+            }catch(err){ console.error(err); alert('Error eliminando'); }
+        }
+        if (action === 'edit'){
+            // open existing modal for editing: populate modal with current row values
+            try{
+                // try cache first for speed
+                let item = cacheGet(id);
+                if (!item){
+                    const token = localStorage.getItem('auth_token');
+                    const headers = { 'Accept':'application/json' };
+                    if (token) headers['Authorization'] = 'Bearer ' + token;
+                    const res = await fetch(apiBase() + '/inventarios/' + id, { headers });
+                    if (res.ok){
+                        const j = await res.json().catch(()=>null);
+                        item = Array.isArray(j) ? j[0] : (j && j.data ? j.data : j);
+                    }
+                }
+                // fallback to DOM parsing
+                if (!item){
+                    const row = document.querySelector('tr[data-id="'+id+'"]');
+                    const nameEl = row ? row.querySelector('td span.font-semibold') : null;
+                    const qtyTd = row ? row.querySelectorAll('td')[1] : null;
+                    const stockMinTd = row ? row.querySelectorAll('td')[2] : null;
+                    const nombreFallback = nameEl ? nameEl.textContent.trim() : '';
+                    const qtyText = qtyTd ? qtyTd.textContent.trim() : '';
+                    const stockMinText = stockMinTd ? stockMinTd.textContent.trim() : '';
+                    const m = qtyText.match(/^\s*([0-9.,]+)\s*(\S*)/);
+                    const value = m ? Number(String(m[1]).replace(',', '.')) : 0;
+                    const unidad = (m && m[2]) ? m[2] : '';
+                    item = {
+                        id: id,
+                        nombre: nombreFallback,
+                        stock_inicial: value,
+                        stock_minimo: (stockMinText.match(/[0-9.,]+/) ? Number(stockMinText.match(/[0-9.,]+/)[0].replace(',', '.')) : 0),
+                        unidad_medida: unidad
+                    };
+                }
+
+                currentEditItem = item;
+                // populate edit form fields
+                if (editIdInput) editIdInput.value = item.id || id;
+                if (editNombre) editNombre.value = item.nombre || '';
+                if (editStock) editStock.value = item.stock_inicial !== undefined ? item.stock_inicial : 0;
+                if (editStockMin) editStockMin.value = item.stock_minimo !== undefined ? item.stock_minimo : 0;
+                if (editUnidad) editUnidad.value = item.unidad_medida || 'kg';
+                if (editDescuento) editDescuento.value = item.descuento_inventario !== undefined ? item.descuento_inventario : 0;
+                openModal('modal-edit-insumo');
+            }catch(e){ console.error(e); openModal('modal-edit-insumo'); }
+        }
+    });
+
+    // initial
+    // Movimientos helpers
+    const movimientosKey = 'inventory_movements_v1';
+    const movimientosContainer = document.getElementById('movimientos-list');
+
+    function loadMovimientos(){
+        try{ return JSON.parse(localStorage.getItem(movimientosKey) || '[]'); }catch(e){ return []; }
+    }
+
+    function saveMovimientos(list){ localStorage.setItem(movimientosKey, JSON.stringify(list)); }
+
+    function formatTime(iso){
+        try{ const d = new Date(iso); return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }catch(e){ return '' }
+    }
+
+    function renderMovimientos(){
+        const list = loadMovimientos();
+        if (!movimientosContainer) return;
+        if (!list.length){ movimientosContainer.innerHTML = '<p class="text-sm text-slate-400">Sin movimientos recientes.</p>'; return; }
+        movimientosContainer.innerHTML = list.slice(0,12).map(m => {
+            const isIn = m.tipo === 'in';
+            const sign = isIn ? '+' : '-';
+            const colorBg = isIn ? 'bg-green-500/20' : 'bg-red-500/20';
+            const colorIcon = isIn ? 'text-green-400' : 'text-red-400';
+            const qty = m.cantidad_text || (m.cantidad !== undefined ? (m.cantidad + (m.unidad||'')) : '');
+            return `
+                <div class="flex gap-4">
+                    <div class="mt-1 w-8 h-8 rounded-full ${colorBg} flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined ${colorIcon} text-sm">${isIn? 'add':'remove'}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start mb-0.5">
+                            <p class="text-sm font-bold text-on-surface truncate">${m.nombre}</p>
+                            <span class="text-[10px] font-mono text-outline">${formatTime(m.time || new Date().toISOString())}</span>
+                        </div>
+                        <p class="text-xs text-on-surface-variant font-medium">${sign}${qty} <span class="text-[10px] opacity-60 ml-2">${m.motivo || ''}</span></p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function recordMovimiento(m){
+        const list = loadMovimientos();
+        const entry = Object.assign({ time: new Date().toISOString() }, m);
+        list.unshift(entry);
+        saveMovimientos(list.slice(0,50));
+        renderMovimientos();
+    }
+
+    // Inline feedback helpers
+    function clearFormFeedback(form){
+        if (!form) return;
+        form.querySelectorAll('.field-error').forEach(el=> el.textContent = '');
+        const msg = form.querySelector('.form-message'); if (msg) msg.remove();
+    }
+
+    function showFieldErrors(form, errors){
+        if (!form || !errors) return;
+        // errors expected as { fieldName: ["msg1","msg2"] }
+        Object.keys(errors).forEach(fn=>{
+            const msgs = errors[fn];
+            const el = form.querySelector('.field-error[data-field="'+fn+'"]');
+            if (el) el.textContent = Array.isArray(msgs)? msgs.join('. '): String(msgs);
+        });
+    }
+
+    function showFormMessage(form, type, text){
+        if (!form) return;
+        const div = document.createElement('div');
+        div.className = 'form-message p-3 rounded-md text-sm mb-2 ' + (type==='success' ? 'bg-emerald-600/20 text-emerald-200' : 'bg-error/10 text-error');
+        div.textContent = text || '';
+        const first = form.querySelector(':scope');
+        form.insertBefore(div, form.firstChild);
+        setTimeout(()=>{ div.remove(); }, 4000);
+    }
+
+    // initial render
+    renderMovimientos();
+
+    // simple cache for inventarios to speed up UI
+    let inventariosCache = [];
+    function cacheSet(list){ inventariosCache = Array.isArray(list)? list.slice() : []; }
+    function cacheGet(id){ return inventariosCache.find(x=> String(x.id) === String(id)); }
+
+    // wire edit form
+    const editForm = document.getElementById('form-edit-insumo');
+    const editIdInput = document.getElementById('edit-insumo-id');
+    const editNombre = document.getElementById('edit-insumo-nombre');
+    const editStock = document.getElementById('edit-insumo-stock');
+    const editStockMin = document.getElementById('edit-insumo-stock-min');
+    const editUnidad = document.getElementById('edit-insumo-unidad');
+    const editDescuento = document.getElementById('edit-insumo-descuento');
+
+    if (editForm){
+        editForm.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const id = editIdInput.value;
+            if (!id) return closeModals();
+            const old = cacheGet(id) || currentEditItem || {};
+            const payload = {
+                id: id,
+                nombre: (editNombre.value||'').trim(),
+                stock_inicial: Number(editStock.value||0),
+                stock_minimo: Number(editStockMin.value||0),
+                unidad_medida: editUnidad.value || null,
+                descuento_inventario: Number(editDescuento.value||0)
+            };
+            try{
+                const token = localStorage.getItem('auth_token');
+                const headers = { 'Accept':'application/json', 'Content-Type':'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(apiBase() + '/inventarios/' + id, { method: 'PUT', headers, body: JSON.stringify(payload) });
+                clearFormFeedback(editForm);
+                if (res.status === 401){ showFormMessage(editForm, 'error', 'No autorizado'); return; }
+                if (res.status === 422){ const body = await res.json().catch(()=>null); const errs = body && body.errors ? body.errors : null; if (errs){ showFieldErrors(editForm, errs); showFormMessage(editForm, 'error', 'Corrige los errores'); } else { showFormMessage(editForm,'error',(body && body.message) || 'Errores de validación'); } return; }
+                if (!res.ok){ const body = await res.text().catch(()=>null); showFormMessage(editForm, 'error', body || 'Error actualizando insumo'); return; }
+                const updated = await res.json().catch(()=>null) || payload;
+                // update cache and DOM in-place for speed
+                const idx = inventariosCache.findIndex(x=> String(x.id) === String(id));
+                if (idx > -1) inventariosCache[idx] = Object.assign({}, inventariosCache[idx], updated);
+                // update row DOM
+                const row = document.querySelector('tr[data-id="'+id+'"]');
+                if (row){ row.outerHTML = renderRow(Object.assign({}, old, updated)); }
+                // record movement: difference between new and old stock
+                const oldStock = Number(old.stock_inicial||0);
+                const newStock = Number(updated.stock_inicial||payload.stock_inicial||0);
+                const diff = +(newStock - oldStock).toFixed(2);
+                if (diff !== 0){
+                    recordMovimiento({ tipo: diff>0? 'in':'out', nombre: payload.nombre, cantidad: Math.abs(diff), unidad: payload.unidad_medida, motivo: 'Ajuste' });
+                }
+                closeModals();
+            }catch(err){ console.error(err); alert('Error actualizando insumo'); }
+        });
+    }
+
+    // handle create insumo form
+    const addForm = document.getElementById('form-add-insumo');
+    if (addForm){
+        addForm.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const fd = new FormData(addForm);
+            const payload = {
+                nombre: (fd.get('nombre')||'').trim(),
+                producto_id: null,
+                stock_inicial: Number(fd.get('stock')||0),
+                stock_minimo: Number(fd.get('stock_min')||0),
+                unidad_medida: fd.get('unidad') || null,
+                descuento_inventario: Number(fd.get('descuento')||0)
+            };
+            try{
+                const token = localStorage.getItem('auth_token');
+                const headers = { 'Accept':'application/json', 'Content-Type':'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(apiBase() + '/inventarios', { method: 'POST', headers, body: JSON.stringify(payload) });
+                clearFormFeedback(addForm);
+                if (res.status === 401){ showFormMessage(addForm, 'error', 'No autorizado'); return; }
+                if (res.status === 422){ const body = await res.json().catch(()=>null); const errs = body && body.errors ? body.errors : null; if (errs) { showFieldErrors(addForm, errs); showFormMessage(addForm, 'error', 'Corrige los errores'); } else { showFormMessage(addForm,'error',(body && body.message) || 'Errores de validación'); } return; }
+                if (!res.ok) { const body = await res.text().catch(()=>null); showFormMessage(addForm, 'error', body || 'Error creando insumo'); return; }
+                // success
+                showFormMessage(addForm, 'success', 'Insumo creado correctamente');
+                // record movement
+                recordMovimiento({ tipo: 'in', nombre: payload.nombre, cantidad: payload.stock_inicial, unidad: payload.unidad_medida, motivo: 'Creación' });
+                fetchInventarios();
+                setTimeout(()=> closeModals(), 700);
+            }catch(err){ console.error(err); alert('Error creando insumo'); }
+        });
+    }
+
+    fetchInventarios();
+})();
+</script>
 @endpush
 
 @endsection

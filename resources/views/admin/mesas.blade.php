@@ -22,123 +22,15 @@
     </div>
 
     <!-- Status Filter Bar -->
-    <div class="flex flex-wrap gap-4 mb-10">
-        <button class="px-6 py-2 rounded-full bg-primary text-on-primary font-bold text-sm shadow-xl shadow-primary/10">Todas (17)</button>
-        <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Libres (9)</button>
-        <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Ocupadas (5)</button>
-        <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Reservadas (3)</button>
+    <div class="flex flex-wrap gap-4 mb-10" id="mesas-filters">
+        <button id="btn-filter-all" data-status="all" class="filter-btn px-6 py-2 rounded-full bg-primary text-on-primary font-bold text-sm shadow-xl shadow-primary/10">Todas (<span id="count-all">0</span>)</button>
+        <button id="btn-filter-libres" data-status="libre" class="filter-btn px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Libres (<span id="count-libres">0</span>)</button>
+        <button id="btn-filter-ocupadas" data-status="ocupada" class="filter-btn px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Ocupadas (<span id="count-ocupadas">0</span>)</button>
+        <button id="btn-filter-reservadas" data-status="reservada" class="filter-btn px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Reservadas (<span id="count-reservadas">0</span>)</button>
     </div>
 
-    @php
-    $mesasMock = [
-        ['id'=>1, 'zona'=>'Salón Principal', 'numero'=>'01', 'estado'=>'Ocupada', 'pax'=>4, 'total'=>1240.0, 'tiempo'=>'01:14:00'],
-        ['id'=>2, 'zona'=>'Salón Principal', 'numero'=>'02', 'estado'=>'Libre', 'pax'=>2, 'tiempo'=>'', 'total'=>0],
-        ['id'=>3, 'zona'=>'Salón Principal', 'numero'=>'03', 'estado'=>'Reservada', 'cliente'=>'G. Rossi (4pax)', 'hora'=>'Hoy - 20:30', 'pax'=>0, 'total'=>0],
-        ['id'=>4, 'zona'=>'Salón Principal', 'numero'=>'04', 'estado'=>'Ocupada', 'pax'=>6, 'total'=>4100.0, 'tiempo'=>'00:42:15'],
-        ['id'=>5, 'zona'=>'Salón Principal', 'numero'=>'05', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-        ['id'=>6, 'zona'=>'Salón Principal', 'numero'=>'06', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-        ['id'=>7, 'zona'=>'Salón Principal', 'numero'=>'07', 'estado'=>'Ocupada', 'pax'=>2, 'total'=>850.0, 'tiempo'=>'00:15:00'],
-        ['id'=>8, 'zona'=>'Salón Principal', 'numero'=>'08', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-        ['id'=>9, 'zona'=>'Salón Principal', 'numero'=>'09', 'estado'=>'Libre', 'pax'=>2, 'tiempo'=>'', 'total'=>0],
-        ['id'=>10, 'zona'=>'Salón Principal', 'numero'=>'10', 'estado'=>'Reservada', 'cliente'=>'A. Gomez (2pax)', 'hora'=>'Hoy - 21:00', 'pax'=>0, 'total'=>0],
-        ['id'=>11, 'zona'=>'Salón Principal', 'numero'=>'11', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-        ['id'=>12, 'zona'=>'Salón Principal', 'numero'=>'12', 'estado'=>'Ocupada', 'pax'=>4, 'total'=>2300.0, 'tiempo'=>'02:10:05'],
-        ['id'=>13, 'zona'=>'Terraza', 'numero'=>'13', 'estado'=>'Libre', 'pax'=>2, 'tiempo'=>'', 'total'=>0],
-        ['id'=>14, 'zona'=>'Terraza', 'numero'=>'14', 'estado'=>'Ocupada', 'pax'=>6, 'total'=>5400.0, 'tiempo'=>'01:45:00'],
-        ['id'=>15, 'zona'=>'Terraza', 'numero'=>'15', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-        ['id'=>16, 'zona'=>'VIP', 'numero'=>'16', 'estado'=>'Libre', 'pax'=>8, 'tiempo'=>'', 'total'=>0],
-        ['id'=>17, 'zona'=>'VIP', 'numero'=>'17', 'estado'=>'Reservada', 'cliente'=>'M. Lopez (10pax)', 'hora'=>'Mañana - 22:00', 'pax'=>0, 'total'=>0],
-    ];
-    @endphp
-
-    <!-- Tables Grid (Asymmetric Bento Style) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        @foreach($mesasMock as $m)
-            @if($m['estado'] === 'Ocupada')
-            <!-- Table Card: Ocupada -->
-            <div class="group relative bg-surface-container-highest rounded-3xl p-6 border border-white/5 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                <div class="flex justify-between items-start mb-8">
-                    <div>
-                        <span class="text-slate-500 font-['Inter'] uppercase tracking-widest text-[10px] block mb-1">Mesa {{ $m['zona'] }}</span>
-                        <h3 class="text-3xl font-black text-white">{{ $m['numero'] }}</h3>
-                    </div>
-                    <div class="px-3 py-1 bg-primary/20 rounded-lg">
-                        <span class="text-[10px] font-black text-primary uppercase tracking-widest">Ocupada</span>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-end">
-                        <div class="text-on-surface-variant">
-                            <p class="text-[10px] uppercase tracking-widest font-bold">Total Cuenta</p>
-                            <p class="text-2xl font-bold text-primary">${{ number_format($m['total'], 2) }}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="material-symbols-outlined text-slate-500 mb-1">schedule</span>
-                            <p class="text-xs text-on-surface-variant">{{ $m['tiempo'] }}</p>
-                        </div>
-                    </div>
-                    <div class="pt-4 border-t border-white/5 flex gap-2">
-                        <a href="{{ route('admin.pedido', ['id' => $m['id']]) }}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
-                        <button onclick="openModal('modal-close-table')" class="flex-1 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">Cerrar</button>
-                    </div>
-                </div>
-            </div>
-            @elseif($m['estado'] === 'Libre')
-            <!-- Table Card: Libre -->
-            <div class="group relative bg-surface-container-low rounded-3xl p-6 border border-white/5 overflow-hidden transition-all duration-300 hover:bg-surface-container-high">
-                <div class="flex justify-between items-start mb-8">
-                    <div>
-                        <span class="text-slate-500 font-['Inter'] uppercase tracking-widest text-[10px] block mb-1">Mesa {{ $m['zona'] }}</span>
-                        <h3 class="text-3xl font-black text-white/40">{{ $m['numero'] }}</h3>
-                    </div>
-                    <div class="px-3 py-1 bg-emerald-500/10 rounded-lg">
-                        <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Libre</span>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center justify-center py-6 opacity-20">
-                    <span class="material-symbols-outlined text-4xl">restaurant</span>
-                    <p class="text-[10px] uppercase tracking-widest mt-2 font-bold">Sin actividad</p>
-                </div>
-                <div class="mt-4">
-                    <button onclick="openModal('modal-open-table')" class="w-full py-3 border border-white/10 hover:border-primary/50 hover:text-primary rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">Abrir Mesa</button>
-                </div>
-            </div>
-            @elseif($m['estado'] === 'Reservada')
-            <!-- Table Card: Reservada -->
-            <div class="group relative bg-surface-container-low rounded-3xl p-6 border border-white/5 overflow-hidden transition-all duration-300 hover:bg-surface-container-high">
-                <div class="flex justify-between items-start mb-8">
-                    <div>
-                        <span class="text-slate-500 font-['Inter'] uppercase tracking-widest text-[10px] block mb-1">Mesa {{ $m['zona'] }}</span>
-                        <h3 class="text-3xl font-black text-white">{{ $m['numero'] }}</h3>
-                    </div>
-                    <div class="px-3 py-1 bg-amber-500/10 rounded-lg">
-                        <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Reservada</span>
-                    </div>
-                </div>
-                <div class="space-y-3 mb-6">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-amber-500/60 text-sm">person</span>
-                        <p class="text-xs text-on-surface">{{ $m['cliente'] }}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-amber-500/60 text-sm">event_available</span>
-                        <p class="text-xs text-on-surface">{{ $m['hora'] }}</p>
-                    </div>
-                </div>
-                <button class="w-full py-3 bg-amber-500/10 text-amber-200 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">Confirmar Llegada</button>
-            </div>
-            @endif
-        @endforeach
-
-        <!-- Add New Table (Ghost State) -->
-        <button onclick="openModal('modal-add-table')" class="group border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all rounded-3xl p-6 flex flex-col items-center justify-center gap-4">
-            <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span class="material-symbols-outlined text-primary text-3xl">add_circle</span>
-            </div>
-            <p class="text-xs uppercase tracking-[0.2em] font-black text-on-surface-variant group-hover:text-primary transition-colors">Añadir Mesa</p>
-        </button>
-    </div>
+    <!-- Tables Grid (loaded from backend) -->
+    <div id="mesas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
 </div>
 
 <!-- FAB for Quick Actions -->
@@ -195,7 +87,7 @@
 
     <!-- Add Table Modal -->
     <div id="modal-add-table" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300">
-        <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center mb-6">
             <h3 class="text-2xl font-black text-white">Nueva Mesa</h3>
             <button onclick="closeModals()" class="text-outline hover:text-white transition-colors">
                 <span class="material-symbols-outlined">close</span>
@@ -204,17 +96,195 @@
         <form class="space-y-4">
             <div>
                 <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Identificador o Número</label>
-                <input type="text" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Ej. VIP 02, Terraza 5">
+                <input id="new-table-identifier" type="text" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Ej. VIP 02, Terraza 5">
             </div>
             <div>
                 <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Capacidad Max. Pax</label>
-                <input type="number" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="4">
+                <input id="new-table-capacity" type="number" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="4">
             </div>
             <div class="flex gap-3 pt-4 border-t border-white/10 mt-6">
-                <button type="button" onclick="closeModals()" class="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm">Registrar Mesa</button>
+                <button id="btn-create-mesa" type="button" onclick="createMesa()" class="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm">Registrar Mesa</button>
             </div>
         </form>
     </div>
 @endpush
 
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    const grid = document.getElementById('mesas-grid');
+    function apiBase(){ return (window.VITE_API_URL || window.API_BASE || '/api').replace(/\/$/, ''); }
+
+    function renderMesa(m){
+        const id = m.id || m._id || '';
+        const identifier = m.nombre || m.identifier || m.name || m.numero || ('Mesa ' + id);
+        const capacity = (m.capacidad || m.capacity || m.pax || '');
+        const status = (m.status || m.estado || 'Libre').toString().toLowerCase();
+        const isOccupied = status === 'ocupada' || status === 'occupied' || status === 'busy' || status === 'occupied';
+
+        const statusBadge = isOccupied ? `<div class="px-3 py-1 bg-primary/20 rounded-lg"><span class="text-[10px] font-black text-primary uppercase tracking-widest">Ocupada</span></div>` : `<div class="px-3 py-1 bg-emerald-500/10 rounded-lg"><span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Libre</span></div>`;
+
+        return `
+            <div data-from-backend="1" data-status="${status}" class="group relative ${isOccupied? 'bg-surface-container-highest':'bg-surface-container-low'} rounded-3xl p-6 border border-white/5 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <span class="text-slate-500 font-['Inter'] uppercase tracking-widest text-[10px] block mb-1">${m.zone||''}</span>
+                        <h3 class="text-3xl font-black text-white">${identifier}</h3>
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div class="text-on-surface-variant">
+                            <p class="text-[10px] uppercase tracking-widest font-bold">Capacidad</p>
+                            <p class="text-2xl font-bold text-primary">${capacity || '-'}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="material-symbols-outlined text-slate-500 mb-1">schedule</span>
+                            <p class="text-xs text-on-surface-variant">${m.updated_at || ''}</p>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-white/5 flex gap-2">
+                        <a href="${(window.location.origin) + '/admin/mesas/' + (id) + '/pedido'}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
+                        <button data-id="${id}" class="btn-delete-mesa flex-1 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function fetchMesas(){
+        grid.setAttribute('data-loading','1');
+        grid.innerHTML = '<p class="text-sm text-slate-400">Cargando mesas…</p>';
+        try{
+            const token = localStorage.getItem('auth_token');
+            const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const res = await fetch(apiBase() + '/mesas', { headers });
+
+            // if backend redirects to /login or responds 401, clear and redirect
+            if (res.status === 401) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_user');
+                window.location.href = '/login';
+                return;
+            }
+
+            if (!res.ok) throw new Error('Error cargando mesas');
+            const json = await res.json();
+            const list = Array.isArray(json.data) ? json.data : (json.mesas || json);
+            if (!list || !list.length) {
+                grid.innerHTML = '<p class="text-sm text-slate-400">No hay mesas definidas.</p>';
+                return;
+            }
+            grid.innerHTML = list.map(renderMesa).join('');
+            // update filter counts and reapply current filter
+            try{ updateStatusCounts(list); }catch(e){}
+            applyFilter(currentFilter);
+            grid.removeAttribute('data-loading');
+            grid.setAttribute('data-loaded','1');
+            // attach delete handlers
+            document.querySelectorAll('.btn-delete-mesa').forEach(b=>{
+                b.addEventListener('click', async (ev)=>{
+                    const id = b.getAttribute('data-id');
+                    if (!confirm('¿Eliminar mesa #' + id + '?')) return;
+                    try{
+                        const token = localStorage.getItem('auth_token');
+                        const headers = { 'Accept':'application/json', 'Content-Type':'application/json' };
+                        if (token) headers['Authorization'] = 'Bearer ' + token;
+                        const r = await fetch(apiBase() + '/mesas/' + id, { method: 'DELETE', headers });
+                        if (!r.ok) throw new Error('no');
+                        fetchMesas();
+                    }catch(e){ alert('No se pudo eliminar'); }
+                });
+            });
+        }catch(e){ grid.innerHTML = '<p class="text-sm text-red-400">Error cargando mesas</p>'; }
+    }
+
+    // create mesa from modal
+    window.createMesa = async function(){
+        const identifier = document.getElementById('new-table-identifier').value.trim();
+        const capacity = document.getElementById('new-table-capacity').value.trim();
+        if (!identifier) return alert('Identificador requerido');
+        try{
+            const token = localStorage.getItem('auth_token');
+            const headers = { 'Accept':'application/json', 'Content-Type':'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const res = await fetch(apiBase() + '/mesas', {
+                method: 'POST', headers, body: JSON.stringify({ nombre: identifier, capacidad: capacity ? Number(capacity) : null })
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(()=>({}));
+                throw new Error(body.message || 'Error creando mesa');
+            }
+            // close modal and refresh
+            closeModals();
+            fetchMesas();
+        }catch(e){ alert(e.message || 'Error'); }
+    };
+
+    // filtering helpers
+    let currentFilter = 'all';
+    function updateStatusCounts(list){
+        const totals = { all: list.length, libre: 0, ocupada: 0, reservada: 0 };
+        list.forEach(m=>{
+            const s = (m.status||m.estado||'libre').toString().toLowerCase();
+            if (s.includes('ocup')) totals.ocupada++;
+            else if (s.includes('reserv')) totals.reservada++;
+            else totals.libre++;
+        });
+        document.getElementById('count-all').textContent = totals.all;
+        document.getElementById('count-libres').textContent = totals.libre;
+        document.getElementById('count-ocupadas').textContent = totals.ocupada;
+        document.getElementById('count-reservadas').textContent = totals.reservada;
+    }
+
+    function applyFilter(status){
+        currentFilter = status || 'all';
+        document.querySelectorAll('#mesas-filters .filter-btn').forEach(b=> b.classList.remove('bg-primary','text-on-primary'));
+        const activeBtn = document.querySelector(`#mesas-filters button[data-status="${currentFilter}"]`);
+        if (activeBtn) activeBtn.classList.add('bg-primary','text-on-primary');
+        document.querySelectorAll('#mesas-grid [data-from-backend]').forEach(card=>{
+            const s = (card.getAttribute('data-status')||'libre').toString().toLowerCase();
+            if (currentFilter === 'all' || s === currentFilter) card.style.display = '';
+            else card.style.display = 'none';
+        });
+    }
+
+    // attach filter button handlers
+    document.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest && ev.target.closest('#mesas-filters button');
+        if (!btn) return;
+        const status = btn.getAttribute('data-status');
+        applyFilter(status);
+    });
+
+    // ensure any static/front-only mesas are removed: observe mutations and force backend reload
+    grid.innerHTML = ''; // wipe any server-rendered visual mocks
+    let reloadTimer = null;
+    const observer = new MutationObserver((mutations)=>{
+        // if nodes are added that are not from backend and we haven't loaded backend mesas yet, clear and refetch
+        for (const m of mutations){
+            for (const n of m.addedNodes){
+                if (n.nodeType !== 1) continue;
+                if (!n.hasAttribute || !n.hasAttribute('data-from-backend')){
+                    // remove the visual mock
+                    n.remove();
+                    if (!grid.hasAttribute('data-loading') && !grid.hasAttribute('data-loaded')){
+                        clearTimeout(reloadTimer);
+                        reloadTimer = setTimeout(()=>{ try { fetchMesas(); } catch(e){} }, 50);
+                    }
+                }
+            }
+        }
+    });
+    observer.observe(grid, { childList: true, subtree: false });
+
+    // initial load — trigger immediately and again on DOMContentLoaded as fallback
+    try { fetchMesas(); } catch(e) {}
+    document.addEventListener('DOMContentLoaded', ()=>{ try { fetchMesas(); } catch(e){} });
+})();
+</script>
+@endpush

@@ -131,51 +131,72 @@
     </div>
 </div>
 
-@push('modals')
-    <!-- Añadir Producto a la orden Modal -->
-    <div id="modal-add-product-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-2xl shadow-2xl transform scale-95 transition-transform duration-300">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-2xl font-black text-white">Menú de Productos</h3>
-            <div class="flex gap-4 items-center">
-                <input type="text" class="bg-surface-container-highest border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-all w-48" placeholder="Buscar producto...">
-                <button onclick="closeModals()" class="text-outline hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-        </div>
-        
-        <div class="flex gap-4 mb-6 overflow-x-auto pb-2 scrollbar-hidden">
-            <button class="px-4 py-1.5 rounded-full bg-primary text-on-primary text-xs font-bold whitespace-nowrap">Todas</button>
-            <button class="px-4 py-1.5 rounded-full bg-surface-container-highest text-on-surface hover:text-white text-xs font-bold border border-white/5 whitespace-nowrap">Hamburguesas</button>
-            <button class="px-4 py-1.5 rounded-full bg-surface-container-highest text-on-surface hover:text-white text-xs font-bold border border-white/5 whitespace-nowrap">Bebidas</button>
-            <button class="px-4 py-1.5 rounded-full bg-surface-container-highest text-on-surface hover:text-white text-xs font-bold border border-white/5 whitespace-nowrap">Postres</button>
-        </div>
+*** End Patch
 
-        <div class="grid grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2">
-            <!-- Items -->
-            <div class="flex items-center gap-4 bg-surface p-3 rounded-xl border border-white/5 hover:border-primary/50 cursor-pointer group transition-all" onclick="closeModals()">
-                <div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-highest">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDx96IqLjluj-_LkE6-J1VCOJZZOqEmzEhiFj5jykJexJzTYwN5050gn5-YGneirui8k1vb9O4pJ7DXEbpFDKIWP4kNdoiyeq3zBUXCnK6BfP0pqFKPr4kGvCT0LltfiHstWVHjzVTEfySBxw2e5F_vONYOWFp6RUYA7ck_FjWxrnI1PTeuxX8BMRJOTdxykjyAqtJ5gbHJ_NVB8CWn6DhgXyMViX7DSaUKXIxr-wt-30ReyoPUSeoIXfbASLr99lpj46hul6SYGcxt" class="w-full h-full object-cover">
-                </div>
-                <div class="flex-1">
-                    <p class="font-bold text-white text-sm group-hover:text-primary transition-colors">Wagyu Burger</p>
-                    <p class="text-xs text-primary font-bold">$18.50</p>
-                </div>
-                <span class="material-symbols-outlined text-outline group-hover:text-primary">add_circle</span>
-            </div>
-            
-            <div class="flex items-center gap-4 bg-surface p-3 rounded-xl border border-white/5 hover:border-primary/50 cursor-pointer group transition-all" onclick="closeModals()">
-                <div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-highest">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF8vyemrZ7-4rBUvJYl8yRd27IQdeMnmlLV30QhqAxXUsPQMTuo1nysyEyEZ7osY59Yji1743M2XNqwwBUzR9EbxLX9gpL57IvL1UV5ufJBLm4i-140ceRDlQXL2WDZlk6on3IpTp25TmaZV906d8EipbkI2NgLezfk5xamf-Whgtlv64y-9vNXFHB2QmUNn9_wArSwLfxmxoB3z0S1ylcgsl3dNBlhm0y6tGjwt2N2NS09W8X5eRApvQM9WLlnvZ9FjbSfnIqRM_c" class="w-full h-full object-cover">
-                </div>
-                <div class="flex-1">
-                    <p class="font-bold text-white text-sm group-hover:text-primary transition-colors">BBQ Ribs</p>
-                    <p class="text-xs text-primary font-bold">$22.00</p>
-                </div>
-                <span class="material-symbols-outlined text-outline group-hover:text-primary">add_circle</span>
-            </div>
-        </div>
-    </div>
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        try{
+            const btn = document.getElementById('crear-pedido-from-menu');
+            if (btn) btn.addEventListener('click', function(){
+                try{
+                    const items = JSON.parse(sessionStorage.getItem('pending_order_items') || '[]');
+                    const mesa = sessionStorage.getItem('selected_mesa_id') || '{{ $mesaId ?? "0" }}';
+                    if (!items.length){ alert('No hay productos agregados.'); return; }
+                    // keep items in sessionStorage and navigate to pedido view where they'll be rendered
+                    window.location.href = '/admin/mesas/' + encodeURIComponent(mesa) + '/pedido';
+                }catch(e){ console.debug('crear pedido err', e); }
+            });
+
+            // If arriving at pedido and there are pending items, render them
+            try{
+                const pending = JSON.parse(sessionStorage.getItem('pending_order_items') || '[]');
+                if (pending && pending.length){
+                    // replace order items list
+                    const list = document.querySelector('.flex-1.overflow-auto.space-y-4');
+                    if (list){
+                        list.innerHTML = '';
+                        pending.forEach(it => {
+                            const node = document.createElement('div');
+                            node.className = 'bg-surface-container-highest/50 p-4 rounded-xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-colors';
+                            node.innerHTML = `<div class="flex items-center gap-4"><div class="w-12 h-12 bg-surface-container-low rounded-lg flex items-center justify-center font-bold text-lg text-white">${it.cantidad}x</div><div><p class="font-bold text-white text-lg">${it.name}</p></div></div><div class="flex items-center gap-6"><p class="text-lg font-bold text-white">${it.precio ? ('$'+Number(it.precio).toLocaleString('es-CO')) : '-'}</p></div>`;
+                            list.appendChild(node);
+                        });
+                        // remove pending items after rendering so user doesn't duplicate
+                        sessionStorage.removeItem('pending_order_items');
+                    }
+                }
+            }catch(e){}
+        }catch(e){ console.debug('pedido init err', e); }
+    });
+</script>
 @endpush
 
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        try{
+            // open menu if requested via sessionStorage flag or query param ?menu=1
+            const shouldOpen = (sessionStorage.getItem('open_menu_after_nav') === '1') || (new URLSearchParams(window.location.search).get('menu') === '1');
+            if (sessionStorage.getItem('open_menu_after_nav') === '1') sessionStorage.removeItem('open_menu_after_nav');
+            if (shouldOpen){
+                // optionally keep selected mesa id
+                const mid = sessionStorage.getItem('selected_mesa_id');
+                // open modal to add product
+                const openBtn = document.querySelector("button[onclick*=" + "\"openModal('modal-add-product-order'\")");
+                if (openBtn) openBtn.click();
+                else {
+                    // fallback: directly show modal element
+                    const m = document.getElementById('modal-add-product-order');
+                    if (m) {
+                        m.classList.remove('hidden'); m.classList.remove('scale-95'); m.classList.add('scale-100');
+                        const overlay = document.getElementById('modal-overlay'); if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100'); }
+                    }
+                }
+            }
+        }catch(e){ console.debug('open menu after nav err', e); }
+    });
+</script>
+@endpush

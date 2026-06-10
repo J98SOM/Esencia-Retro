@@ -32,6 +32,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         return view('admin.checkout', ['mesaId' => $id]);
     })->name('checkout');
 
+    Route::get('/users', function () {
+        return view('admin.users');
+    })->name('users');
+
+    Route::get('/roles', function () {
+        return view('admin.roles');
+    })->name('roles');
+
     Route::get('/reportes', function () {
         return view('admin.reportes');
     })->name('reportes');
@@ -39,4 +47,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/alquiler', function () {
         return view('admin.alquiler');
     })->name('alquiler');
+
+    // Lista paginada de alquileres (vista creada como admin.alquiler_list)
+    Route::get('/alquiler/list', function () {
+        return view('admin.alquiler_list');
+    })->name('alquiler.list');
+
+    Route::get('/cocina', function () {
+        return view('admin.cocina');
+    })->name('cocina');
+});
+
+// Load API routes under /api prefix using the API middleware (stateless)
+Route::prefix('api')->middleware('api')->group(function () {
+    require __DIR__ . '/api.php';
 });

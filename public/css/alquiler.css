@@ -12,6 +12,17 @@
     padding-right: 4px;
 }
 
+/* Forzar color visible en inputs de las filas (modo UI, no impresión) */
+.item-row input,
+.item-row .item-cant,
+.item-row .item-precio {
+    color: #ffffff !important;
+}
+
+.item-row input::placeholder {
+    color: rgba(255,255,255,0.35) !important;
+}
+
 /* --- Selector de cantidad de ítems -------------------------- */
 #items-count-selector {
     background: rgba(36, 36, 36, 0.9);
@@ -60,6 +71,38 @@
     gap: 0.75rem;
     animation: slideUp 0.3s ease;
 }
+
+/* Ensure display spans for view-mode look like inputs */
+.item-cant-display,
+.item-precio-display {
+    display: block;
+    width: 100%;
+    text-align: right;
+    color: #ffffff !important;
+    padding: 0.25rem 0.25rem;
+    box-sizing: border-box;
+}
+
+.item-cant-display { text-align: center; }
+
+/* Readonly input appearance for view-mode */
+.readonly-input {
+    color: #111 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    text-align: right;
+}
+
+/* Print helpers: show print-value spans and hide inputs when printing */
+.print-value { display: none; }
+.hide-for-print { display: inline-block; }
+
+@media print {
+    .print-value { display: inline-block !important; color: #1a1a1a !important; }
+    .hide-for-print { display: none !important; }
+}
+
 
 @keyframes slideUp {
     from { transform: translateY(1rem); opacity: 0; }

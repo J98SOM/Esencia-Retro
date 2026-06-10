@@ -19,43 +19,50 @@
         </div>
         
         <!-- Dashboard Tab -->
-        <a href="{{ route('admin.dashboard') }}" 
-           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.dashboard') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+          <a href="{{ route('admin.dashboard') }}" data-roles="admin,mesero,waiter,kitchen,cocina,mesero"
+              class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.dashboard') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Dashboard</span>
         </a>
         
         <!-- Products Tab -->
-        <a href="{{ route('admin.productos') }}" 
-           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.productos') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+          <a href="{{ route('admin.productos') }}" data-roles="admin"
+              class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.productos') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">inventory_2</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Productos</span>
         </a>
 
         <!-- Inventory Tab -->
-        <a href="{{ route('admin.inventario') }}" 
-           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.inventario') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+          <a href="{{ route('admin.inventario') }}" data-roles="admin"
+              class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.inventario') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">warehouse</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Inventario</span>
         </a>
 
         <!-- Tables Tab -->
-        <a href="{{ route('admin.mesas') }}" 
-           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.mesas') || request()->routeIs('admin.pedido') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+          <a href="{{ route('admin.mesas') }}" data-roles="admin,mesero,waiter,kitchen,cocina"
+              class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.mesas') || request()->routeIs('admin.pedido') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">table_restaurant</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Mesas</span>
         </a>
 
+                <!-- Kitchen / Cocina Tab -->
+                    <a href="{{ route('admin.cocina') }}" data-roles="admin,cocina,kitchen"
+                            class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.cocina') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+                        <span class="material-symbols-outlined group-hover:scale-110 transition-transform">restaurant_menu</span>
+                        <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Cocina</span>
+                </a>
+
         <!-- Reports Tab -->
-        <a href="{{ route('admin.reportes') }}" 
-           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.reportes') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+          <a href="{{ route('admin.reportes') }}" data-roles="admin"
+              class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.reportes') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">analytics</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Reportes</span>
         </a>
 
         <!-- Rental Tab -->
-        <a href="{{ route('admin.alquiler') }}" 
-           class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.alquiler') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+          <a href="{{ route('admin.alquiler') }}" data-roles="admin"
+              class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.alquiler') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">celebration</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Alquiler Salón</span>
         </a>
@@ -73,8 +80,8 @@
                 <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiWenezqJGbD-1rlSh8Is3huor8fZxWZLXx3y1f9a9228ZWoq_mtHho3gXIPj4ssTtBWFIbYpYNH3Dd1P6GFV8jKd3ieKk7oWUP1EZauBfRGLv2b75v0aqlS4tkgPga-ISdrxYZ5PKQQgqkNq6Rkwzj6xARv3r09m8_tcR0OlRG4dnve3aGcpcepAINAsNgglD61KbQ_SYlkfogXTf4LEBGo_caiaVksVMNHv1ar1HblEJlraXJhRw-tq9Jp-T4lPGhucnStjGiYY4" alt="Operator"/>
             </div>
             <div class="sidebar-text opacity-100 transition-opacity">
-                <p class="text-xs font-bold text-white whitespace-nowrap">Operador del Sistema</p>
-                <p class="text-[10px] text-slate-500 whitespace-nowrap">Centro de Control</p>
+                <p id="sidebar-profile-name" class="text-xs font-bold text-white whitespace-nowrap">Operador del Sistema</p>
+                <p id="sidebar-profile-role" class="text-[10px] text-slate-500 whitespace-nowrap">Centro de Control</p>
             </div>
         </div>
         
@@ -82,7 +89,7 @@
             <span class="material-symbols-outlined text-sm">settings</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Configuración</span>
         </a>
-        <a href="{{ route('login') }}" class="nav-link flex items-center gap-3 px-4 py-2 text-error/70 hover:bg-error/10 hover:text-error transition-all rounded-xl mt-4 overflow-hidden group">
+        <a href="#" data-logout class="nav-link flex items-center gap-3 px-4 py-2 text-error/70 hover:bg-error/10 hover:text-error transition-all rounded-xl mt-4 overflow-hidden group">
             <span class="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">logout</span>
             <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Cerrar Sesión</span>
         </a>

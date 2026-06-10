@@ -116,7 +116,7 @@
             ];
             @endphp
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+            <div id="dashboard-mesas-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 <!-- Mesa Items loop -->
                 @foreach($mesasMock as $m)
                     @if($m['estado'] === 'Ocupada')
@@ -167,6 +167,70 @@
                     <span class="text-[10px] font-bold uppercase tracking-widest text-primary/50 mt-2">Nueva Mesa</span>
                 </div>
             </div>
+
+            @push('scripts')
+            <script>
+            (function(){
+                const grid = document.getElementById('dashboard-mesas-grid');
+                if (!grid) return;
+                function apiBase(){ return (window.VITE_API_URL || window.API_BASE || '/api').replace(/\/$/, ''); }
+
+                function renderSmallMesa(m){
+                    const id = m.id || '';
+                    const nombre = m.nombre || m.identifier || ('Mesa ' + id);
+                    const capacidad = m.capacidad || m.capacity || '';
+                    const estado = (m.estado || m.status || 'libre').toString().toLowerCase();
+                    const dot = estado.includes('ocup') ? 'bg-primary-container' : (estado.includes('reserv') ? 'bg-tertiary-container' : 'bg-secondary');
+                    return `
+                        <div class="bg-surface-container p-6 rounded-xl border border-white/5 hover:border-primary/20 transition-all group ${estado==='ocupada' ? 'active-glow' : ''}">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="text-lg font-bold text-white">${nombre}</span>
+                                <span class="w-3 h-3 rounded-full ${dot}"></span>
+                            </div>
+                            <p class="text-[10px] font-['Inter'] uppercase tracking-widest ${estado==='ocupada' ? 'text-primary' : estado==='reservada' ? 'text-tertiary-container' : 'text-secondary'} mb-1">${estado.toUpperCase()}</p>
+                            <p class="text-xs text-on-surface-variant">Capacidad: ${capacidad || '-' } personas</p>
+                            <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
+                                <a href="/admin/mesas/${id}/pedido" class="text-primary hover:text-white transition-colors text-sm font-bold">DETALLES</a>
+                                <button data-id="${id}" class="btn-delete-small-mesa text-xs py-1 px-3 bg-primary/10 text-primary rounded-lg">ELIMINAR</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                async function fetchDashboardMesas(){
+                    grid.innerHTML = '<p class="text-sm text-slate-400">Cargando mesas…</p>';
+                    try{
+                        const token = localStorage.getItem('auth_token');
+                        const headers = { 'Accept':'application/json' };
+                        if (token) headers['Authorization'] = 'Bearer ' + token;
+                        const res = await fetch(apiBase() + '/mesas', { headers });
+                        if (res.status === 401) return; // let main app handle
+                        const data = await res.json();
+                        const list = Array.isArray(data.data) ? data.data : (data.mesas || data);
+                        if (!list || !list.length) { grid.innerHTML = '<p class="text-sm text-slate-400">No hay mesas.</p>'; return; }
+                        grid.innerHTML = list.map(renderSmallMesa).join('');
+                        // attach delete handlers
+                        document.querySelectorAll('.btn-delete-small-mesa').forEach(b=>{
+                            b.addEventListener('click', async ()=>{
+                                const id = b.getAttribute('data-id');
+                                if (!confirm('Eliminar mesa #' + id + '?')) return;
+                                try{
+                                    const token = localStorage.getItem('auth_token');
+                                    const headers = { 'Accept':'application/json' };
+                                    if (token) headers['Authorization'] = 'Bearer ' + token;
+                                    const r = await fetch(apiBase() + '/mesas/' + id, { method: 'DELETE', headers });
+                                    if (r.ok) fetchDashboardMesas();
+                                }catch(e){ console.error(e); }
+                            });
+                        });
+                    }catch(e){ grid.innerHTML = '<p class="text-sm text-red-400">Error cargando mesas</p>'; }
+                }
+
+                try{ fetchDashboardMesas(); }catch(e){}
+                document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState === 'visible') fetchDashboardMesas(); });
+            })();
+            </script>
+            @endpush
 
             <!-- Featured Image Card -->
             <div class="mt-8 rounded-2xl overflow-hidden relative h-48 group">

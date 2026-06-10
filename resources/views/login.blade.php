@@ -89,6 +89,9 @@
             50% { box-shadow: 0 0 40px rgba(234, 188, 78, 0.2); }
         }
     </style>
+    <script>
+        try { window.VITE_API_URL = "{{ env('VITE_API_URL') }}"; } catch(e) { window.VITE_API_URL = window.VITE_API_URL || null; }
+    </script>
 </head>
 <body class="min-h-screen flex items-center justify-center overflow-hidden selection:bg-primary/30 selection:text-primary">
     <main class="flex w-full h-screen">
@@ -164,7 +167,7 @@
                     <p class="text-on-surface-variant">Por favor, ingresa tus credenciales para continuar.</p>
                 </div>
 
-                <form method="GET" action="{{ route('admin.dashboard') }}" class="space-y-6">
+                <form id="login-form" class="space-y-6" novalidate>
                     <!-- Role Selection -->
                     <div class="space-y-3">
                         <label class="text-sm font-semibold uppercase tracking-widest text-on-surface-variant px-1">Rol de Acceso</label>
@@ -192,12 +195,12 @@
                         </div>
                     </div>
 
-                    <!-- Username -->
+                    <!-- Email -->
                     <div class="space-y-2">
-                        <label for="username" class="text-sm font-semibold text-on-surface-variant px-1">Usuario</label>
+                        <label for="email" class="text-sm font-semibold text-on-surface-variant px-1">Email</label>
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">person</span>
-                            <input type="text" id="username" placeholder="Ingrese su usuario" class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
+                            <input type="email" id="email" name="email" placeholder="usuario@ejemplo.com" required class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
                         </div>
                     </div>
 
@@ -214,8 +217,9 @@
                     </div>
 
                     <!-- CTA Button -->
-                    <button type="submit" class="w-full py-4 rounded-xl primary-gradient text-on-primary font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
-                        <span>Ingresar al Sistema</span>
+                    <div id="login-error" class="text-sm text-red-400 hidden"></div>
+                    <button id="login-submit" type="button" class="w-full py-4 rounded-xl primary-gradient text-on-primary font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                        <span id="login-submit-label">Ingresar al Sistema</span>
                         <span class="material-symbols-outlined">arrow_forward</span>
                     </button>
                 </form>
@@ -238,5 +242,102 @@
             <rect width="100%" height="100%" filter="url(#noise)"/>
         </svg>
     </div>
+    <script>
+        // Rewrite requests from localhost:8000 to the configured backend URL
+        (function(){
+            var backend = window.VITE_API_URL || "{{ env('VITE_API_URL') }}";
+            if (!backend) return;
+            try { backend = String(backend).replace(/\/$/, ''); } catch(e) {}
+            const origFetch = window.fetch;
+            window.fetch = function(input, init){
+                try {
+                    let url = typeof input === 'string' ? input : (input && input.url) || '';
+                    if (url && (url.indexOf('http://127.0.0.1:8000') === 0 || url.indexOf('http://localhost:8000') === 0 || url.indexOf('http://127.0.0.1:8000/api')===0 || url.indexOf('http://localhost:8000/api')===0)){
+                        // replace base
+                        url = url.replace(/^https?:\/\/(?:127\.0\.0\.1|localhost)(:8000)?(\/api)?/, backend);
+                        input = typeof input === 'string' ? url : new Request(url, input);
+                    }
+                } catch(e){}
+                return origFetch.call(this, input, init);
+            };
+        })();
+    </script>
+    <script type="module" src="{{ asset('build/assets/app-D4wL1XMv.js') }}"></script>
+    <script>
+        (function () {
+            const form = document.getElementById('login-form');
+            if (!form) return;
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const errorBox = document.getElementById('login-error');
+            const submitBtn = document.getElementById('login-submit');
+            const submitLabel = document.getElementById('login-submit-label');
+
+            function setLoading(loading) {
+                if (loading) {
+                    submitBtn.disabled = true;
+                    submitLabel.textContent = 'Ingresando...';
+                } else {
+                    submitBtn.disabled = false;
+                    submitLabel.textContent = 'Ingresar al Sistema';
+                }
+            }
+
+            function showError(msg) {
+                errorBox.textContent = msg;
+                errorBox.classList.remove('hidden');
+            }
+
+                    submitBtn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                errorBox.classList.add('hidden');
+                const mail = email.value && email.value.trim();
+                const pwd = password.value && password.value.trim();
+
+                if (!mail) return showError('El email es requerido');
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return showError('Email inválido');
+                if (!pwd) return showError('La contraseña es requerida');
+
+                setLoading(true);
+                try {
+                    const res = await window.AuthService.login(mail, pwd);
+                    if (res && (res.token || res.user)) {
+                        // role-based redirect: configurable mapping by role name (lowercased)
+                        const routeMap = {
+                            'admin': '/admin/dashboard',
+                            'waiter': '/admin/mesas',
+                            'mesero': '/admin/mesas',
+                            'kitchen': '/admin/mesas',
+                            'cocina': '/admin/mesas'
+                        };
+
+                        // prefer persisted active role, fallback to first role from server
+                        const activeRoleId = (window.AuthService && typeof window.AuthService.getActiveRole === 'function') ? window.AuthService.getActiveRole() : null;
+                        let chosenRole = null;
+                        if (activeRoleId && res.user && Array.isArray(res.user.roles)) {
+                            chosenRole = res.user.roles.find(r => Number(r.id) === Number(activeRoleId));
+                        }
+                        if (!chosenRole && res.user && Array.isArray(res.user.roles) && res.user.roles.length) {
+                            chosenRole = res.user.roles[0];
+                        }
+
+                        let dest = '/admin/dashboard';
+                        if (chosenRole && chosenRole.name) {
+                            const rn = String(chosenRole.name).toLowerCase();
+                            if (routeMap[rn]) dest = routeMap[rn];
+                        }
+
+                        window.location.href = dest;
+                    } else {
+                        showError('Respuesta inesperada del servidor');
+                    }
+                } catch (err) {
+                    showError(err.message || 'Error de autenticación');
+                } finally {
+                    setLoading(false);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

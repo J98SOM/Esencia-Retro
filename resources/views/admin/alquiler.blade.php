@@ -29,6 +29,10 @@
                 <span class="material-symbols-outlined text-sm">refresh</span>
                 <span>Limpiar</span>
             </button>
+            <a href="{{ route('admin.alquiler.list') }}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-surface-variant hover:bg-white/5 hover:text-white transition-all text-xs font-bold uppercase tracking-widest">
+                <span class="material-symbols-outlined text-sm">list</span>
+                <span>Ver listado</span>
+            </a>
             <button onclick="imprimirFactura()"
                     class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20
                            text-primary hover:bg-primary hover:text-on-primary transition-all text-xs font-bold uppercase tracking-widest">
@@ -79,12 +83,7 @@
                                class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
                                       px-3 py-2 text-primary text-sm font-bold focus:outline-none focus:border-primary transition-all">
                     </div>
-                    <div class="flex items-center gap-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Vencimiento</label>
-                        <input type="date" id="factura-vence" name="factura_vence"
-                               class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                      px-3 py-2 text-primary text-sm font-bold focus:outline-none focus:border-primary transition-all">
-                    </div>
+                          <!-- Vencimiento eliminado por solicitud -->
                 </div>
             </div>
         </div>
@@ -235,18 +234,7 @@
         {{-- ── Pago ─────────────────────────────────────────────── --}}
         <div class="grid grid-cols-1 md:grid-cols-2 border-t border-white/10">
             <div class="p-5 space-y-3 border-b md:border-b-0 md:border-r border-white/10">
-                <div class="flex items-center gap-3">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-28 shrink-0">
-                        Forma de pago:
-                    </label>
-                    <select id="forma-pago" name="forma_pago"
-                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                   px-3 py-2 text-primary text-xs font-bold focus:outline-none focus:border-primary transition-all">
-                        <option value="contado">Contado</option>
-                        <option value="credito">Crédito</option>
-                        <option value="cuotas">Cuotas</option>
-                    </select>
-                </div>
+                <!-- Forma de pago eliminada por solicitud -->
                 <div class="flex items-center gap-3">
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-28 shrink-0">
                         Medio de pago:
