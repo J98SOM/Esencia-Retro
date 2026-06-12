@@ -46,45 +46,35 @@
             </div>
             
             <div class="flex-1 overflow-auto space-y-4">
-                <!-- Order Item -->
-                <div class="bg-surface-container-highest/50 p-4 rounded-xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-colors">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-surface-container-low rounded-lg flex items-center justify-center font-bold text-lg text-white">
-                            2x
+                @forelse($items as $item)
+                    @php
+                        $prod = $item->producto;
+                        $precioTotal = $item->cantidad * $item->precio_unitario;
+                    @endphp
+                    <div class="bg-surface-container-highest/50 p-4 rounded-xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-surface-container-low rounded-lg flex items-center justify-center font-bold text-lg text-white">
+                                {{ intval($item->cantidad) }}x
+                            </div>
+                            <div>
+                                <p class="font-bold text-white text-lg">{{ $prod->nombre ?? $item->descripcion }}</p>
+                                <p class="text-slate-500 text-xs mt-1">Precio unitario: ${{ number_format($item->precio_unitario, 2) }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-white text-lg">Hamburguesa Premium</p>
-                            <p class="text-xs text-on-surface-variant flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[14px]">edit_note</span> Sin cebolla
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-6">
-                        <p class="text-lg font-bold text-white">$25.98</p>
-                        <button class="text-error hover:text-error-container p-2 rounded-lg bg-error/10 transition-colors">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Order Item -->
-                <div class="bg-surface-container-highest/50 p-4 rounded-xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-colors">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-surface-container-low rounded-lg flex items-center justify-center font-bold text-lg text-white">
-                            1x
-                        </div>
-                        <div>
-                            <p class="font-bold text-white text-lg">Cerveza Artesanal</p>
-                            <p class="text-xs text-on-surface-variant">Bebidas</p>
+                        <div class="flex items-center gap-6">
+                            <p class="text-lg font-bold text-white">${{ number_format($precioTotal, 2) }}</p>
+                            <form action="{{ route('admin.pedido.delete_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-error hover:text-error-container p-2 rounded-lg bg-error/10 transition-colors">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
-                    <div class="flex items-center gap-6">
-                        <p class="text-lg font-bold text-white">$5.99</p>
-                        <button class="text-error hover:text-error-container p-2 rounded-lg bg-error/10 transition-colors">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
-                    </div>
-                </div>
+                @empty
+                    <p class="text-sm text-slate-400">No hay productos agregados en esta mesa.</p>
+                @endforelse
             </div>
         </div>
 
@@ -98,22 +88,22 @@
                 <div class="space-y-4 text-sm mb-6">
                     <div class="flex justify-between text-on-surface-variant">
                         <span>Subtotal</span>
-                        <span class="font-bold text-white">$31.97</span>
+                        <span class="font-bold text-white">${{ number_format($total, 2) }}</span>
                     </div>
                     <div class="flex justify-between text-on-surface-variant">
                         <span>Impuestos (10%)</span>
-                        <span class="font-bold text-white">$3.20</span>
+                        <span class="font-bold text-white">${{ number_format($total * 0.10, 2) }}</span>
                     </div>
                     <div class="flex justify-between text-on-surface-variant">
                         <span>Propina sugerida</span>
-                        <span class="font-bold text-white">$3.20</span>
+                        <span class="font-bold text-white">${{ number_format($total * 0.10, 2) }}</span>
                     </div>
                 </div>
                 <div class="pt-6 border-t border-white/5 flex justify-between items-center mb-6">
                     <span class="text-lg font-bold text-on-surface">Total</span>
-                    <span class="text-3xl font-black text-primary">$38.37</span>
+                    <span class="text-3xl font-black text-primary">${{ number_format($total + ($total * 0.20), 2) }}</span>
                 </div>
-                <button onclick="window.location.href='{{ route('admin.checkout', ['id' => $mesaId ?? '4']) }}'" class="w-full py-4 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 hover:scale-[0.98] transition-all">
+                <button onclick="window.location.href='{{ route('admin.checkout', ['id' => $mesaId]) }}'" class="w-full py-4 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 hover:scale-[0.98] transition-all">
                     Cobrar Mesa
                 </button>
             </div>
@@ -130,73 +120,4 @@
         </aside>
     </div>
 </div>
-
-*** End Patch
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function(){
-        try{
-            const btn = document.getElementById('crear-pedido-from-menu');
-            if (btn) btn.addEventListener('click', function(){
-                try{
-                    const items = JSON.parse(sessionStorage.getItem('pending_order_items') || '[]');
-                    const mesa = sessionStorage.getItem('selected_mesa_id') || '{{ $mesaId ?? "0" }}';
-                    if (!items.length){ alert('No hay productos agregados.'); return; }
-                    // keep items in sessionStorage and navigate to pedido view where they'll be rendered
-                    window.location.href = '/admin/mesas/' + encodeURIComponent(mesa) + '/pedido';
-                }catch(e){ console.debug('crear pedido err', e); }
-            });
-
-            // If arriving at pedido and there are pending items, render them
-            try{
-                const pending = JSON.parse(sessionStorage.getItem('pending_order_items') || '[]');
-                if (pending && pending.length){
-                    // replace order items list
-                    const list = document.querySelector('.flex-1.overflow-auto.space-y-4');
-                    if (list){
-                        list.innerHTML = '';
-                        pending.forEach(it => {
-                            const node = document.createElement('div');
-                            node.className = 'bg-surface-container-highest/50 p-4 rounded-xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-colors';
-                            node.innerHTML = `<div class="flex items-center gap-4"><div class="w-12 h-12 bg-surface-container-low rounded-lg flex items-center justify-center font-bold text-lg text-white">${it.cantidad}x</div><div><p class="font-bold text-white text-lg">${it.name}</p></div></div><div class="flex items-center gap-6"><p class="text-lg font-bold text-white">${it.precio ? ('$'+Number(it.precio).toLocaleString('es-CO')) : '-'}</p></div>`;
-                            list.appendChild(node);
-                        });
-                        // remove pending items after rendering so user doesn't duplicate
-                        sessionStorage.removeItem('pending_order_items');
-                    }
-                }
-            }catch(e){}
-        }catch(e){ console.debug('pedido init err', e); }
-    });
-</script>
-@endpush
-
 @endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function(){
-        try{
-            // open menu if requested via sessionStorage flag or query param ?menu=1
-            const shouldOpen = (sessionStorage.getItem('open_menu_after_nav') === '1') || (new URLSearchParams(window.location.search).get('menu') === '1');
-            if (sessionStorage.getItem('open_menu_after_nav') === '1') sessionStorage.removeItem('open_menu_after_nav');
-            if (shouldOpen){
-                // optionally keep selected mesa id
-                const mid = sessionStorage.getItem('selected_mesa_id');
-                // open modal to add product
-                const openBtn = document.querySelector("button[onclick*=" + "\"openModal('modal-add-product-order'\")");
-                if (openBtn) openBtn.click();
-                else {
-                    // fallback: directly show modal element
-                    const m = document.getElementById('modal-add-product-order');
-                    if (m) {
-                        m.classList.remove('hidden'); m.classList.remove('scale-95'); m.classList.add('scale-100');
-                        const overlay = document.getElementById('modal-overlay'); if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100'); }
-                    }
-                }
-            }
-        }catch(e){ console.debug('open menu after nav err', e); }
-    });
-</script>
-@endpush

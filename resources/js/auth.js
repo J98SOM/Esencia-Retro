@@ -5,7 +5,7 @@ const ACTIVE_ROLE_KEY = 'active_role';
 // Determine API base URL:
 // Priority: global `window.VITE_API_URL` or `window.API_BASE` (injected from Blade) -> import.meta.env.VITE_API_URL (Vite) -> fallback to production backend URL
 const _globalApi = (typeof window !== 'undefined' && (window.VITE_API_URL || window.API_BASE || window.__API_BASE)) ? (window.VITE_API_URL || window.API_BASE || window.__API_BASE) : null;
-const API_BASE = _globalApi ? String(_globalApi).replace(/\/$/, '') : ((import.meta && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : 'https://esencia-retrobackend-testing.up.railway.app/api');
+const API_BASE = _globalApi ? String(_globalApi).replace(/\/$/, '') : ((import.meta && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '/api');
 try { console.debug('Auth API_BASE ->', API_BASE); } catch(e) {}
 
 window.Auth = {

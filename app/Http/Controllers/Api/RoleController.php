@@ -3,38 +3,70 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\StoreRoleRequest;
+use App\Http\Requests\Auth\UpdateRoleRequest;
 use App\Models\Role;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class RoleController extends Controller
 {
-    public function index()
+    /**
+     * Get all roles
+     */
+    public function index(): JsonResponse
     {
-        return response()->json(Role::all());
+        $roles = Role::all();
+
+        return response()->json([
+            'roles' => $roles,
+        ], 200);
     }
 
-    public function show(Role $role)
+    /**
+     * Get a specific role
+     */
+    public function show(Role $role): JsonResponse
     {
-        return response()->json($role);
+        return response()->json([
+            'role' => $role,
+        ], 200);
     }
 
-    public function store(Request $request)
+    /**
+     * Create a new role
+     */
+    public function store(StoreRoleRequest $request): JsonResponse
     {
-        $data = $request->validate(['name' => 'required|string|unique:roles,name', 'description' => 'sometimes|string|nullable']);
-        $role = Role::create($data);
-        return response()->json($role, 201);
+        $role = Role::create($request->validated());
+
+        return response()->json([
+            'message' => 'Role created successfully',
+            'role' => $role,
+        ], 201);
     }
 
-    public function update(Request $request, Role $role)
+    /**
+     * Update a role
+     */
+    public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
-        $data = $request->validate(['name' => 'sometimes|string|unique:roles,name,'.$role->id, 'description' => 'sometimes|string|nullable']);
-        $role->update($data);
-        return response()->json($role);
+        $role->update($request->validated());
+
+        return response()->json([
+            'message' => 'Role updated successfully',
+            'role' => $role,
+        ], 200);
     }
 
-    public function destroy(Role $role)
+    /**
+     * Delete a role
+     */
+    public function destroy(Role $role): JsonResponse
     {
         $role->delete();
-        return response()->json(['deleted' => true]);
+
+        return response()->json([
+            'message' => 'Role deleted successfully',
+        ], 200);
     }
 }

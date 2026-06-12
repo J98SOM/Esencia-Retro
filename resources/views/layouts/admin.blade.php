@@ -96,8 +96,8 @@
         }
     </style>
     <script>
-        // expose backend API URL to client scripts
-        try { window.VITE_API_URL = "{{ env('VITE_API_URL') }}"; } catch(e) { window.VITE_API_URL = window.VITE_API_URL || null; }
+        window.VITE_API_URL = '/api';
+        window.API_BASE = '/api';
     </script>
     @stack('styles')
 </head>
@@ -139,12 +139,29 @@
     <!-- Global Modals Container -->
     <div id="modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center opacity-0 transition-opacity duration-300">
         <!-- New Order Modal -->
+        @php
+            $freeMesas = \App\Models\Mesa::whereDoesntHave('facturas', function($query) {
+                $query->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(estatus)'), ['pagado', 'pagada']);
+            })->orderBy('nombre')->get();
+        @endphp
         <div id="modal-new-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
             <h3 class="text-2xl font-black text-white mb-2">Nueva Orden</h3>
             <p class="text-sm text-on-surface-variant mb-6">Selecciona una mesa libre para abrir una nueva orden rápida.</p>
             
             <div class="space-y-3 mb-6 max-h-64 overflow-y-auto pr-2" id="mesas-list-container">
-                <!-- mesas listas se inyectan dinámicamente -->
+                @foreach($freeMesas as $m)
+                    <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex items-center justify-between p-4 rounded-xl border border-white/5 transition-all bg-surface hover:bg-surface-container-highest hover:border-primary/50 group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <span class="material-symbols-outlined">restaurant</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-white group-hover:text-primary transition-colors">{{ $m->nombre }}</p>
+                                <p class="text-[10px] text-slate-500 uppercase tracking-widest">Capacidad: {{ $m->capacidad }} pax</p>
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
             </div>
             
             <div class="flex gap-3 pt-4 border-t border-white/10">
@@ -159,8 +176,8 @@
                     <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiWenezqJGbD-1rlSh8Is3huor8fZxWZLXx3y1f9a9228ZWoq_mtHho3gXIPj4ssTtBWFIbYpYNH3Dd1P6GFV8jKd3ieKk7oWUP1EZauBfRGLv2b75v0aqlS4tkgPga-ISdrxYZ5PKQQgqkNq6Rkwzj6xARv3r09m8_tcR0OlRG4dnve3aGcpcepAINAsNgglD61KbQ_SYlkfogXTf4LEBGo_caiaVksVMNHv1ar1HblEJlraXJhRw-tq9Jp-T4lPGhucnStjGiYY4" alt="Operator"/>
                 </div>
                 <div>
-                    <p class="font-bold text-white text-lg">System Operator</p>
-                    <p class="text-[10px] uppercase font-bold text-primary tracking-widest">Administrador</p>
+                    <p class="font-bold text-white text-lg">{{ auth()->user()->name ?? 'Usuario' }}</p>
+                    <p class="text-[10px] uppercase font-bold text-primary tracking-widest">{{ ucfirst(optional(auth()->user()->rol)->name ?? 'Rol') }}</p>
                 </div>
             </div>
             <div class="space-y-2 mb-6">
@@ -173,12 +190,14 @@
                     <span class="font-medium text-sm">Notificaciones</span>
                 </a>
             </div>
-            <a href="#" data-logout class="w-full py-3 rounded-xl bg-error/10 text-error hover:bg-error hover:text-on-error transition-colors flex items-center justify-center gap-2 font-bold text-sm">
+            <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="w-full py-3 rounded-xl bg-error/10 text-error hover:bg-error hover:text-on-error transition-colors flex items-center justify-center gap-2 font-bold text-sm">
                 <span class="material-symbols-outlined text-sm">logout</span>
                 Cerrar Sesión
             </a>
         </div>
-        
+           @php
+            $allProducts = \App\Models\Producto::orderBy('nombre')->get();
+        @endphp
         <!-- Añadir Producto a la orden Modal (global) -->
         <div id="modal-add-product-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-5xl shadow-2xl transform scale-95 transition-transform duration-300 sm:mx-3 sm:my-4 sm:rounded-xl sm:h-[calc(100vh-4rem)] sm:overflow-hidden">
             <div class="flex justify-between items-center mb-6">
@@ -190,18 +209,40 @@
                     </button>
                 </div>
             </div>
-            <div id="productos-filters" class="flex gap-4 mb-6 overflow-x-auto pb-2 scrollbar-hidden">
-                <!-- filtros se inyectan dinámicamente -->
-            </div>
 
-            <div id="productos-grid" class="grid gap-6 max-h-[65vh] md:max-h-[75vh] overflow-y-auto pr-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
-                <!-- productos inyectados por JS -->
-            </div>
-            <div class="mt-4 flex justify-end gap-3">
-                <button id="crear-pedido-from-menu" class="py-3 px-6 rounded-xl bg-primary text-on-primary font-bold">Crear Pedido</button>
-                <button onclick="closeModals()" class="py-3 px-6 rounded-xl border border-white/10">Cancelar</button>
-            </div>
-        </div>
+            <form id="add-products-form" method="POST" action="">
+                @csrf
+                <input type="hidden" name="cantidad" value="1">
+                <div id="productos-grid" class="grid gap-6 max-h-[60vh] overflow-y-auto pr-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
+                    @foreach($allProducts as $p)
+                        <div class="product-card group relative overflow-hidden rounded-xl bg-surface-container-low p-5 md:p-6 transition-all hover:bg-surface-container-high cursor-pointer flex flex-col md:flex-row items-start gap-4" data-name="{{ strtolower($p->nombre) }}">
+                            <div class="w-full md:w-28 h-36 md:h-28 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center flex-shrink-0">
+                                <img src="{{ $p->imagen_url ?? '' }}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
+                            </div>
+                            <div class="flex-1 min-w-0 flex flex-col justify-between relative">
+                                <div>
+                                    <p class="font-bold text-white text-base md:text-lg whitespace-nowrap overflow-visible">{{ $p->nombre }}</p>
+                                    <p class="text-sm md:text-base text-primary font-bold mt-1">${{ number_format($p->precio, 2) }}</p>
+                                </div>
+                                <div class="mt-4 flex items-center gap-3">
+                                    <label class="text-xs text-slate-500 font-bold">CANTIDAD:</label>
+                                    <select name="products[{{ $p->id }}]" class="rounded bg-surface-container-highest border border-white/10 text-white text-sm p-1">
+                                        <option value="0" selected>0</option>
+                                        @for($i=1; $i<=20; $i++)
+                                            <option value="{{ $i }}">{{ $i }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-6 flex justify-end gap-3 border-t border-white/5 pt-4">
+                    <button type="submit" class="py-3 px-6 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20">Agregar al Pedido</button>
+                    <button type="button" onclick="closeModals()" class="py-3 px-6 rounded-xl border border-white/10">Cancelar</button>
+                </div>
+            </form>
+        </div>   </div>
 
         @stack('modals')
 
@@ -247,13 +288,15 @@
                 modalOverlay.classList.remove('opacity-0');
                 modalOverlay.classList.add('opacity-100');
                 const target = document.getElementById(modalId);
-                // If opening new-order modal, load free mesas from API
-                if (modalId === 'modal-new-order') {
-                    loadMesasLibres();
-                }
-                // If opening product menu modal, load products
+                // If opening product menu modal, configure form action dynamically
                 if (modalId === 'modal-add-product-order') {
-                    loadProductos();
+                    const form = document.getElementById('add-products-form');
+                    const parts = window.location.pathname.split('/');
+                    const idx = parts.indexOf('mesas');
+                    const mesaId = (idx !== -1 && parts[idx + 1]) ? parts[idx + 1] : (sessionStorage.getItem('selected_mesa_id') || '0');
+                    if (form) {
+                        form.action = '/admin/mesas/' + mesaId + '/pedido/add';
+                    }
                 }
                 target.classList.remove('hidden');
                 setTimeout(() => {
@@ -263,414 +306,25 @@
             });
         }
 
-        // Load free mesas from API and render into modal-new-order list
-        window.loadMesasLibres = async function loadMesasLibres(){
-            const container = document.querySelector('#modal-new-order .space-y-3');
-            if (!container) return;
-            container.innerHTML = '<div class="text-sm text-slate-400">Cargando mesas libres...</div>';
-            const token = localStorage.getItem('auth_token');
-            const headers = { 'Accept': 'application/json' };
-            // attach auth token to the common headers so candidate fetches use the same credentials
-            try{
-                const token = localStorage.getItem('auth_token');
-                if (token && String(token).trim().length) {
-                    headers['Authorization'] = 'Bearer ' + token;
-                }
-            }catch(e){ /* ignore */ }
-            if (token) headers['Authorization'] = 'Bearer ' + token;
-            // debug: indicate presence/length of token but avoid printing full token
-            try { console.debug('loadProductos auth token present:', Boolean(token), token ? ('len:' + token.length) : null); } catch(e){}
-
-            // Build candidate URLs to avoid double '/api' mistakes
-            const candidates = [];
-            // If a VITE_API_URL is configured, prefer it first (try remote backend before local relative)
-            try {
-                const base = (window.VITE_API_URL || '').toString().trim();
-                if (base) {
-                    const b = base.replace(/\/+$/, '');
-                    if (b.indexOf('/mesas') !== -1) candidates.unshift(b);
-                    else if (b.endsWith('/api')) candidates.unshift(b + '/mesas');
-                    else candidates.unshift(b + '/api/mesas');
-                }
-            } catch(e){}
-            // then try relative (works when app and API share same origin)
-            candidates.push('/api/mesas');
-
-            // If running a Vite dev server (common port 5173), try the Laravel dev server on port 8000
-            try{
-                const host = window.location.hostname;
-                const port = window.location.port;
-                if ((host === '127.0.0.1' || host === 'localhost') && port && port !== '8000'){
-                    const alt = 'http://' + host + ':8000/api/mesas';
-                    if (candidates.indexOf(alt) === -1) candidates.push(alt);
-                }
-                // also try replacing port portion if present
-                if (window.location.origin && window.location.origin.indexOf(':') !== -1){
-                    const maybe = window.location.origin.replace(/:\d+$/, ':8000') + '/api/mesas';
-                    if (candidates.indexOf(maybe) === -1) candidates.push(maybe);
-                }
-            }catch(e){}
-
-            // also try window.API_BASE if present
-            try{
-                const alt = (window.API_BASE || '').toString().trim().replace(/\/+$/, '');
-                if (alt && candidates.indexOf(alt) === -1) {
-                    if (alt.indexOf('/mesas') !== -1) candidates.push(alt);
-                    else if (alt.endsWith('/api')) candidates.push(alt + '/mesas');
-                    else candidates.push(alt + '/api/mesas');
-                }
-            }catch(e){}
-
-            let lastErr = null;
-            for (const url of candidates) {
-                try{
-                    console.debug('Trying mesas URL', url);
-                    // Only send credentials for same-origin requests to avoid CORS + credentials issues
-                    const opts = { headers };
-                    try{ const u = new URL(url, window.location.href); if (u.origin === window.location.origin) { opts.credentials = 'include'; } else { opts.mode = 'cors'; } } catch(e){ opts.mode = 'cors'; }
-                    const res = await fetch(url, opts);
-                    if (!res.ok) {
-                        // attempt to capture response body for debugging
-                        let text = '';
-                        try{ text = await res.text(); } catch(e) { text = '<no body>'; }
-                        lastErr = new Error('Status ' + res.status + ' for ' + url + ' body: ' + text);
-                        console.debug('mesas fetch not ok', res.status, url, text);
-                        continue;
-                    }
-                    const data = await res.json();
-                    console.debug('mesas fetched', url, data && data.length ? data.length : (data? 'object' : 'empty'));
-                    renderMesasList(container, data);
-                    return;
-                }catch(e){ lastErr = e; console.debug('mesas fetch error', e); continue; }
-            }
-            console.debug('loadMesasLibres error', lastErr);
-            container.innerHTML = '<div class="text-sm text-red-400">Error cargando mesas</div>';
-        }
-
-        // Load products for the menu modal
-        window.loadProductos = async function loadProductos(){
-            const grid = document.getElementById('productos-grid');
-            if (!grid) return;
-            grid.innerHTML = '<div class="col-span-2 text-sm text-slate-400">Cargando productos...</div>';
-            const headers = { 'Accept': 'application/json' };
-            // Prefer the exact backend you tested to avoid mismatched origins or double /api
-            let data = null;
-            const candidates = [];
-            try {
-                // Hardcode the tested Railway backend as first preference
-                const tested = 'https://esencia-retrobackend-testing.up.railway.app/api/productos';
-                // First try a direct fetch exactly like the manual test, to reproduce the working request
-                try{
-                    const tkn = localStorage.getItem('auth_token');
-                    const dbgHeaders = { 'Accept': 'application/json' };
-                    if (tkn) dbgHeaders['Authorization'] = 'Bearer ' + tkn;
-                    console.debug('Direct test fetch to', tested, 'headers present', Boolean(tkn));
-                    const rTest = await fetch(tested, { headers: dbgHeaders, mode: 'cors' });
-                    console.debug('Direct test fetch status', rTest.status);
-                    const text = await rTest.text();
-                    console.debug('Direct test fetch body', text);
-                    if (rTest.ok) {
-                        try{ const parsed = JSON.parse(text); data = parsed; } catch(e){ data = null; }
-                        // If the direct test succeeded, render immediately and skip the candidate loop
-                        if (data && Array.isArray(data)){
-                            try{ window._productos_cache = data; renderProductosFilters(); renderProductosGrid(); return; } catch(e){ /* fallthrough if render fails */ }
+        // Live search filter for Blade-rendered products inside the modal
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('productos-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase().trim();
+                    document.querySelectorAll('#productos-grid .product-card').forEach(card => {
+                        const name = card.getAttribute('data-name') || '';
+                        if (name.includes(query)) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
                         }
-                    }
-                }catch(e){ console.debug('direct test fetch err', e); }
-                candidates.push(tested);
-                const baseRaw = (window.VITE_API_URL || '').toString().trim();
-                if (baseRaw) {
-                    const b = baseRaw.replace(/\/+$/, '');
-                    if (b.match(/\/productos$|\/products$/)) {
-                        candidates.push(b);
-                    } else if (b.endsWith('/api')) {
-                        candidates.push(b + '/productos');
-                        candidates.push(b + '/products');
-                    } else {
-                        candidates.push(b + '/api/productos');
-                        candidates.push(b + '/api/products');
-                    }
-                }
-            } catch(e){}
-            // fallback relative endpoints
-            candidates.push('/api/productos');
-            candidates.push('/api/products');
-
-            let lastErr = null;
-            let unauthorized = false;
-            // First pass: try with Authorization header if present
-            for (const url of candidates){
-                try{
-                    console.debug('Trying products URL', url);
-                    const opts = { headers };
-                    try{
-                        const masked = headers['Authorization'] ? ('Bearer ' + String(headers['Authorization']).slice(-8).padStart(10,'*')) : null;
-                        console.debug('fetch opts', { url, headers: { Accept: headers['Accept'], Authorization: masked } });
-                    }catch(e){}
-                    try{ const u = new URL(url, window.location.href); if (u.origin === window.location.origin) { opts.credentials = 'include'; } else { opts.mode = 'cors'; } } catch(e){ opts.mode = 'cors'; }
-                    const res = await fetch(url, opts);
-                    if (res.status === 401) { unauthorized = true; lastErr = new Error('Unauthorized ' + url); console.debug('products fetch unauthorized', url); continue; }
-                    if (!res.ok) { lastErr = new Error('Status ' + res.status + ' ' + url); console.debug('products fetch not ok', res.status, url); continue; }
-                    data = await res.json(); break;
-                }catch(e){ lastErr = e; console.debug('products fetch error', e); continue; }
-            }
-            // If unauthorized and we had a token, try again WITHOUT Authorization header (public fallback)
-            if (!data && unauthorized && (localStorage.getItem('auth_token'))){
-                console.debug('Unauthorized with token — retrying products without Authorization header');
-                const headersNoAuth = { 'Accept': 'application/json' };
-                for (const url of candidates){
-                    try{
-                        const opts = { headers: headersNoAuth };
-                        try{ const u = new URL(url, window.location.href); if (u.origin === window.location.origin) { opts.credentials = 'include'; } else { opts.mode = 'cors'; } } catch(e){ opts.mode = 'cors'; }
-                        const res = await fetch(url, opts);
-                        if (!res.ok) { lastErr = new Error('Status ' + res.status + ' ' + url); console.debug('products fetch not ok (no auth)', res.status, url); continue; }
-                        data = await res.json(); break;
-                    }catch(e){ lastErr = e; console.debug('products fetch error (no auth)', e); continue; }
-                }
-            }
-
-            if (!data || !Array.isArray(data)) {
-                console.debug('loadProductos final err', lastErr);
-                // If unauthorized detected, show login CTA
-                if (unauthorized) {
-                    grid.innerHTML = `
-                        <div class="col-span-2 text-sm text-red-400">No autorizado. Debes iniciar sesión para ver los productos.</div>
-                        <div class="col-span-2 mt-4">
-                            <button id="productos-login-cta" class="py-2 px-4 rounded-xl bg-primary text-on-primary font-bold">Ir a Login</button>
-                        </div>
-                    `;
-                    setTimeout(()=>{
-                        const cta = document.getElementById('productos-login-cta');
-                        if (cta) cta.addEventListener('click', ()=>{ window.location.href = '/login'; });
-                    }, 30);
-                } else {
-                    grid.innerHTML = '<div class="col-span-2 text-sm text-slate-400">No hay productos</div>';
-                }
-                return;
-            }
-            // Cache products and render filters + grid (search + filter applied)
-            try{ window._productos_cache = Array.isArray(data) ? data : []; } catch(e){ window._productos_cache = data || []; }
-            renderProductosFilters();
-            renderProductosGrid();
-        }
-
-        // Render filter buttons based on product categories (dynamic)
-        function renderProductosFilters(){
-            try{
-                const container = document.getElementById('productos-filters');
-                if (!container) return;
-                const products = Array.isArray(window._productos_cache) ? window._productos_cache : [];
-                // detect category field candidates
-                const catCandidates = ['category','categoria','tipo','tipo_producto','categoria_id','group'];
-                const cats = new Set();
-                products.forEach(p => {
-                    for (const k of catCandidates){
-                        if (p && p[k]){ cats.add(String(p[k]||'').trim()); break; }
-                    }
-                    // fallback: if product has 'tags' array
-                    if (!p) return;
-                    if (Array.isArray(p.tags) && p.tags.length){ p.tags.forEach(t => cats.add(String(t).trim())); }
-                });
-                // Normalise and remove empty
-                const finalCats = Array.from(cats).map(c=>c).filter(Boolean);
-                // Always include 'Todas' first
-                container.innerHTML = '';
-                const allBtn = document.createElement('button');
-                allBtn.className = 'px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap';
-                allBtn.dataset.filter = '';
-                allBtn.textContent = 'Todas';
-                container.appendChild(allBtn);
-                finalCats.forEach(cat => {
-                    const b = document.createElement('button');
-                    b.className = 'px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap';
-                    b.dataset.filter = cat;
-                    b.textContent = cat;
-                    container.appendChild(b);
-                });
-                // Apply styles and handlers
-                Array.from(container.children).forEach((btn, idx)=>{
-                    btn.classList.add('bg-surface-container-highest','text-on-surface','border','border-white/5');
-                    if (idx===0) btn.classList.remove('bg-surface-container-highest','border','border-white/5');
-                    if (idx===0) btn.classList.add('bg-primary','text-on-primary');
-                    btn.addEventListener('click', function(){
-                        Array.from(container.children).forEach(c=>{
-                            c.classList.remove('bg-primary','text-on-primary');
-                            c.classList.add('bg-surface-container-highest','text-on-surface','border','border-white/5');
-                        });
-                        this.classList.remove('bg-surface-container-highest','text-on-surface','border','border-white/5');
-                        this.classList.add('bg-primary','text-on-primary');
-                        renderProductosGrid();
                     });
                 });
-            }catch(e){ console.debug('renderProductosFilters err', e); }
-        }
+            }
+        });
 
-        // Render products into grid using active filter + search term
-        function renderProductosGrid(){
-            try{
-                const grid = document.getElementById('productos-grid');
-                const container = document.getElementById('productos-filters');
-                const searchInput = document.getElementById('productos-search-input');
-                if (!grid) return;
-                const products = Array.isArray(window._productos_cache) ? window._productos_cache : [];
-                let activeFilter = '';
-                if (container){
-                    const active = Array.from(container.children).find(c=>c.classList && c.classList.contains('bg-primary'));
-                    if (active && active.dataset) activeFilter = active.dataset.filter || '';
-                }
-                const q = (searchInput && searchInput.value) ? String(searchInput.value).toLowerCase().trim() : '';
-                // filter products
-                const filtered = products.filter(p => {
-                    // match category if activeFilter set
-                    if (activeFilter){
-                        const catKeys = ['category','categoria','tipo','tipo_producto','categoria_id','group'];
-                        let matched = false;
-                        for (const k of catKeys){ if (p && p[k] && String(p[k]).toLowerCase().indexOf(String(activeFilter).toLowerCase()) !== -1){ matched = true; break; } }
-                        if (!matched) return false;
-                    }
-                    if (!q) return true;
-                    // match name/description
-                    const name = String(p.name||p.nombre||p.desc||p.descripcion||'').toLowerCase();
-                    if (name.indexOf(q) !== -1) return true;
-                    const code = String(p.code||p.sku||p.id||'').toLowerCase();
-                    if (code.indexOf(q) !== -1) return true;
-                    return false;
-                });
-                // render
-                grid.innerHTML = '';
-                if (!filtered.length){ grid.innerHTML = '<div class="col-span-2 text-sm text-slate-400">No hay productos</div>'; return; }
-                filtered.forEach(p => {
-                    const card = document.createElement('div');
-                    card.className = 'group relative overflow-hidden rounded-xl bg-surface-container-low p-5 md:p-6 transition-all hover:bg-surface-container-high cursor-pointer flex flex-col md:flex-row items-start gap-4';
-                    const price = (p.price || p.precio || p.valor || p.price_cop) || 0;
-                    card.innerHTML = `
-                        <div class="w-full md:w-28 h-36 md:h-28 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center flex-shrink-0">
-                            <img src="${escapeHtml(p.image || p.img || p.foto || p.imagen_url || '')}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
-                        </div>
-                        <div class="flex-1 min-w-0 flex flex-col justify-between relative">
-                            <div>
-                                <p class="font-bold text-white text-base md:text-lg whitespace-nowrap overflow-visible">${escapeHtml(p.name||p.nombre||p.desc||p.descripcion||'Producto')}</p>
-                                <p class="text-sm md:text-base text-primary font-bold mt-1">${formatMoney(Number(price||0))}</p>
-                            </div>
-                            <div class="mt-3 md:mt-0 flex items-center justify-end relative">
-                                <button class="add-product-btn material-symbols-outlined text-outline bg-white/5 rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center">add_circle</button>
-                                <div class="qty-panel hidden sm:absolute right-0 bottom-full mb-3 sm:w-40 w-full p-3 rounded-lg bg-surface-container-high border border-white/5 flex flex-col sm:flex-row items-center sm:justify-between gap-2">
-                                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                                        <button class="qty-decr px-3 py-1 rounded-full border border-white/5">-</button>
-                                        <div class="qty-value font-bold px-2">1</div>
-                                        <button class="qty-incr px-3 py-1 rounded-full border border-white/5">+</button>
-                                    </div>
-                                    <button class="qty-add w-full sm:w-auto px-2 py-1 rounded bg-primary text-on-primary mt-2 sm:mt-0">OK</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    const btn = card.querySelector('.add-product-btn');
-                    // quantity panel handlers
-                    const panel = card.querySelector('.qty-panel');
-                    const valEl = card.querySelector('.qty-value');
-                    const incr = card.querySelector('.qty-incr');
-                    const decr = card.querySelector('.qty-decr');
-                    const addConfirm = card.querySelector('.qty-add');
-                    let qty = 1;
-                    function showPanel(){ if(panel) { panel.classList.remove('hidden'); panel.classList.add('flex'); } }
-                    function hidePanel(){ if(panel) { panel.classList.remove('flex'); panel.classList.add('hidden'); } qty = 1; if (valEl) valEl.textContent = String(qty); }
-                    btn.addEventListener('click', function(e){
-                        e.stopPropagation();
-                        if (!panel) return;
-                        if (panel.classList.contains('hidden')) showPanel(); else hidePanel();
-                    });
-                    if (incr) incr.addEventListener('click', function(e){ e.stopPropagation(); qty = Math.min(99, qty + 1); if (valEl) valEl.textContent = String(qty); });
-                    if (decr) decr.addEventListener('click', function(e){ e.stopPropagation(); qty = Math.max(1, qty - 1); if (valEl) valEl.textContent = String(qty); });
-                    if (addConfirm) addConfirm.addEventListener('click', function(e){
-                        e.stopPropagation();
-                        try{
-                            const items = JSON.parse(sessionStorage.getItem('pending_order_items') || '[]');
-                            items.push({ producto_id: p.id || p.producto_id || null, name: p.name||p.nombre||p.desc||p.descripcion, precio: Number(price||0), cantidad: Number(qty||1) });
-                            sessionStorage.setItem('pending_order_items', JSON.stringify(items));
-                            hidePanel();
-                            try{ const f = document.createElement('div'); f.textContent = 'Añadido'; f.className = 'toast-temp fixed z-[9999] right-6 bottom-6 bg-primary text-on-primary px-4 py-2 rounded'; document.body.appendChild(f); setTimeout(()=>f.remove(),1200); }catch(e){}
-                        }catch(e){ console.debug('add product err', e); }
-                    });
-                    grid.appendChild(card);
-                });
-            }catch(e){ console.debug('renderProductosGrid err', e); }
-        }
-
-        // wire search input to filter live
-        try{
-            const si = document.getElementById('productos-search-input');
-            if (si) si.addEventListener('input', function(){ renderProductosGrid(); });
-        }catch(e){}
-
-        // ensure formatMoney exists
-        if (typeof formatMoney !== 'function'){
-            function formatMoney(n){ return '$' + Number(n||0).toLocaleString('es-CO', {minimumFractionDigits: 0}); }
-        }
-
-        function renderMesasList(container, mesas){
-            console.debug('renderMesasList called', mesas);
-            if (!Array.isArray(mesas)) { container.innerHTML = '<div class="text-sm text-slate-400">No hay mesas (respuesta inválida)</div>'; return; }
-            container.innerHTML = '';
-            mesas.forEach(m => {
-                const status = (m.status || '').toString().toLowerCase();
-                // detect if mesa has active orders
-                let hasOrders = false;
-                try{
-                    if (Array.isArray(m.orders) && m.orders.length) hasOrders = true;
-                    if (Array.isArray(m.pedidos) && m.pedidos.length) hasOrders = true;
-                    if (Array.isArray(m.ordenes) && m.ordenes.length) hasOrders = true;
-                    if (typeof m.order_count !== 'undefined' && Number(m.order_count) > 0) hasOrders = true;
-                    if (m.order && typeof m.order === 'object' && Object.keys(m.order).length) hasOrders = true;
-                }catch(e){ /* ignore */ }
-
-                // occupancy flags
-                const occupiedFlagExplicit = (typeof m.occupied !== 'undefined') ? Boolean(m.occupied) : null;
-                const isStatusOccupied = (status === 'ocupada' || status === 'occupied' || status === 'ocupado');
-
-                const isLibre = (()=>{
-                    if (occupiedFlagExplicit !== null) return !occupiedFlagExplicit && !hasOrders;
-                    if (isStatusOccupied) return false;
-                    // consider libre if status explicitly indicates free or no orders present
-                    if (['libre','available','free','vacant','disponible'].includes(status)) return true;
-                    return !hasOrders;
-                })();
-                const a = document.createElement('a');
-                a.className = 'flex items-center justify-between p-4 rounded-xl border border-white/5 transition-all group';
-                if (isLibre) a.classList.add('bg-surface','hover:bg-surface-container-highest','hover:border-primary/50');
-                else a.classList.add('bg-surface-container-high','opacity-60','cursor-not-allowed');
-                // For libre mesas, open the product menu modal instead of navigating immediately
-                a.setAttribute('href', '#');
-                a.addEventListener('click', function(e){
-                    e.preventDefault();
-                    try{
-                        sessionStorage.setItem('selected_mesa_id', String(m.id));
-                    }catch(err){ /* ignore */ }
-                    if (isLibre) {
-                        // Load products and open the global product menu modal so staff can add items first
-                        try{
-                            loadProductos();
-                        }catch(e){ console.debug('loadProductos err', e); }
-                        openModal('modal-add-product-order');
-                        return;
-                    }
-                    // If occupied, navigate to existing pedido view
-                    window.location.href = '/admin/mesas/' + encodeURIComponent(m.id) + '/pedido';
-                });
-                a.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-lg ${isLibre? 'bg-emerald-500/10 text-emerald-400':'bg-slate-700 text-slate-400'} flex items-center justify-center">
-                            <span class="material-symbols-outlined">restaurant</span>
-                        </div>
-                        <div>
-                            <p class="font-bold text-white group-hover:text-primary transition-colors">${escapeHtml(m.identifier || ('M-' + String(m.id).padStart(2,'0')))}</p>
-                            <p class="text-[10px] text-slate-500 uppercase tracking-widest">${escapeHtml(m.zone || 'General')} ${isLibre? '': '(ocupada)'}</p>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(a);
-            });
-        }
+        // API-related functions removed. Carga directa por base de datos en Blade.
 
         function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
 
@@ -694,170 +348,7 @@
             if (e.target === modalOverlay) closeModals();
         });
     </script>
-    <script>
-        // Attach logout handler to any element with [data-logout]
-        document.addEventListener('click', function (e) {
-            const el = e.target.closest && e.target.closest('[data-logout]');
-            if (!el) return;
-            e.preventDefault();
-            if (window.AuthService && typeof window.AuthService.logout === 'function') {
-                window.AuthService.logout();
-            } else {
-                // Fallback: clear localStorage token and navigate to login
-                try { localStorage.removeItem('auth_token'); localStorage.removeItem('auth_user'); } catch (err) {}
-                window.location.href = '{{ route('login') }}';
-            }
-        });
-    </script>
-    <script>
-        // Role-based sidebar rendering: hide links not allowed for the active role
-        (function(){
-            function applyRoleUI(){
-                try{
-                    const userJson = localStorage.getItem('auth_user');
-                    if (!userJson) return;
-                    const user = JSON.parse(userJson);
-                    const activeRoleId = (window.AuthService && typeof window.AuthService.getActiveRole === 'function') ? window.AuthService.getActiveRole() : (localStorage.getItem('active_role') ? Number(localStorage.getItem('active_role')) : null);
-                    let activeRole = null;
-                    if (user && Array.isArray(user.roles)){
-                        if (activeRoleId) activeRole = user.roles.find(r => Number(r.id) === Number(activeRoleId));
-                        if (!activeRole) activeRole = user.roles[0] || null;
-                    }
-
-                    const roleName = activeRole && activeRole.name ? String(activeRole.name).toLowerCase() : null;
-                    // Debug info
-                    try { console.debug('applyRoleUI:', { roleName, activeRole, userRoles: user.roles || null, role_id: user.role_id || null }); } catch(e){}
-
-                    // If the user is admin (role name contains 'admin' or numeric role_id === 1), give full access
-                    let isAdminOverride = false;
-                    try {
-                        if (roleName && roleName.indexOf('admin') !== -1) isAdminOverride = true;
-                        if (!isAdminOverride && user && Number(user.role_id) === 1) isAdminOverride = true;
-                    } catch(e){}
-
-                    // update profile display
-                    const nameEl = document.getElementById('sidebar-profile-name');
-                    const roleEl = document.getElementById('sidebar-profile-role');
-                    if (nameEl) nameEl.textContent = user.name || nameEl.textContent;
-                    if (roleEl && roleName) roleEl.textContent = roleName.charAt(0).toUpperCase() + roleName.slice(1);
-
-                    // show/hide nav links
-                    // If user lacks `roles` array but has `role_id`, try to fetch full user from /api/me once.
-                    try {
-                        const rawUser = localStorage.getItem('auth_user');
-                        if (rawUser) {
-                            const u = JSON.parse(rawUser);
-                            if ((!u.roles || !Array.isArray(u.roles) || u.roles.length === 0) && u.role_id) {
-                                const fetchedFlag = sessionStorage.getItem('fetched_roles_for_user_' + (u.id || ''));
-                                const token = localStorage.getItem('auth_token');
-                                if (!fetchedFlag && token) {
-                                    sessionStorage.setItem('fetched_roles_for_user_' + (u.id || ''), '1');
-                                    fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }})
-                                        .then(r => r.ok ? r.json() : Promise.reject(r))
-                                        .then(data => {
-                                            if (data && data.user) {
-                                                try { localStorage.setItem('auth_user', JSON.stringify(data.user)); } catch(e){}
-                                            }
-                                            // re-run UI update after we have roles
-                                            setTimeout(applyRoleUI, 50);
-                                        })
-                                        .catch(()=>{});
-                                }
-                            }
-                        }
-                    } catch (e) { /* ignore */ }
-
-                    // Determine effective role: prefer `active_role`, fallback to first role from `auth_user.roles`.
-                    let effectiveRole = null;
-                    try {
-                        const storedActive = localStorage.getItem('active_role');
-                        if (storedActive && String(storedActive).trim().length) {
-                            effectiveRole = String(storedActive).trim().toLowerCase();
-                        } else {
-                            const rawUser = localStorage.getItem('auth_user');
-                            if (rawUser) {
-                                const u = JSON.parse(rawUser);
-                                if (u && Array.isArray(u.roles) && u.roles.length) {
-                                    // roles may be objects with `name` or strings
-                                    const first = u.roles[0];
-                                    if (typeof first === 'string') effectiveRole = first.toLowerCase();
-                                    else if (first && first.name) effectiveRole = String(first.name).toLowerCase();
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        effectiveRole = null;
-                    }
-
-                    document.querySelectorAll('[data-roles]').forEach(a => {
-                        const allowed = String(a.getAttribute('data-roles')||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-                        if (!allowed.length) {
-                            // no restriction — leave visible
-                            a.style.display = '';
-                            return;
-                        }
-                        // If admin override, show all links
-                        if (isAdminOverride) { a.style.display = ''; return; }
-
-                        // If we determined an effective role, show only allowed links for it.
-                        if (effectiveRole) {
-                            if (allowed.indexOf(effectiveRole) === -1) a.style.display = 'none';
-                            else a.style.display = '';
-                        } else {
-                                // No role at all: conservative default — keep links whose visible text is Dashboard or Mesas
-                                const linkText = (a.textContent||'').toLowerCase();
-                                const keep = linkText.indexOf('dashboard') !== -1 || linkText.indexOf('mesas') !== -1;
-                                if (keep) a.style.display = '';
-                                else a.style.display = 'none';
-                        }
-                    });
-                }catch(e){ /* ignore */ }
-            }
-
-            // try to apply immediately and again after a short delay (AuthService may initialize slightly later)
-            document.addEventListener('DOMContentLoaded', ()=>{ applyRoleUI(); setTimeout(applyRoleUI, 800); setTimeout(applyRoleUI, 2000); });
-            // also apply when storage changes (e.g., login in another tab)
-            window.addEventListener('storage', (e)=>{ if (e.key === 'auth_user' || e.key === 'active_role') applyRoleUI(); });
-        })();
-    </script>
-    <script>
-        // Handle Crear Pedido button inside the global product modal
-        document.addEventListener('DOMContentLoaded', function(){
-            try{
-                const crearBtn = document.getElementById('crear-pedido-from-menu');
-                if (crearBtn) crearBtn.addEventListener('click', function(){
-                    try{
-                        const mesa = sessionStorage.getItem('selected_mesa_id');
-                        const items = JSON.parse(sessionStorage.getItem('pending_order_items') || '[]');
-                        if (!mesa) { alert('Seleccione una mesa antes de crear el pedido.'); return; }
-                        if (!items || !items.length) { alert('No hay productos añadidos.'); return; }
-                        // mark mesa as occupied via API, then navigate to mesas list
-                        const token = localStorage.getItem('auth_token');
-                        const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
-                        if (token) headers['Authorization'] = 'Bearer ' + token;
-                        // call occupy endpoint
-                        fetch('/api/mesas/' + encodeURIComponent(mesa) + '/occupy', { method: 'POST', headers })
-                            .then(r => {
-                                if (!r.ok) throw r;
-                                return r.json();
-                            })
-                            .then(() => {
-                                try{ sessionStorage.removeItem('pending_order_items'); } catch(e){}
-                                closeModals();
-                                // go to mesas list so staff can click the occupied mesa to invoice
-                                window.location.href = '/admin/mesas';
-                            })
-                            .catch(err => {
-                                console.debug('occupy mesa err', err);
-                                // fallback: still navigate to mesas view
-                                closeModals();
-                                window.location.href = '/admin/mesas';
-                            });
-                    }catch(e){ console.debug('crear pedido click err', e); }
-                });
-            }catch(e){ console.debug('attach crear-pedido handler err', e); }
-        });
-    </script>
+    <!-- Removed redundant client-side API/roles scripts -->
     @stack('scripts')
 </body>
 </html>
