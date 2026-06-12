@@ -86,6 +86,24 @@
         </a>
         @endif
 
+        <!-- Alquiler List Tab -->
+        @if($roleName === 'admin')
+        <a href="{{ route('admin.alquiler.list', ['tipo' => 'evento']) }}"
+            class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.alquiler.list') && request('tipo') === 'evento' ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+            <span class="material-symbols-outlined group-hover:scale-110 transition-transform">list_alt</span>
+            <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Alquiler List</span>
+        </a>
+        @endif
+
+        <!-- Facturas Tab -->
+        @if(in_array($roleName, ['admin', 'mesero', 'waiter', 'kitchen', 'cocina']))
+        <a href="{{ route('admin.alquiler.list') }}"
+            class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.alquiler.list') && request('tipo') !== 'evento' ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
+            <span class="material-symbols-outlined group-hover:scale-110 transition-transform">receipt_long</span>
+            <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Facturas</span>
+        </a>
+        @endif
+
         <!-- Users Tab -->
         @if($roleName === 'admin')
         <a href="{{ route('admin.users') }}"

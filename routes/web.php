@@ -225,8 +225,17 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         
         $factura = $mesa->latestFactura;
         if (!$factura || in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
+            $max = \Illuminate\Support\Facades\DB::table('facturas')
+                ->where('tipo', 'pos')
+                ->select(\Illuminate\Support\Facades\DB::raw('MAX(CAST(numero_orden AS UNSIGNED)) as max'))
+                ->lockForUpdate()
+                ->value('max');
+            $next = $max ? intval($max) + 1 : 1;
+            $numeroOrden = str_pad($next, 4, '0', STR_PAD_LEFT);
+
             $factura = Factura::create([
                 'tipo' => 'pos',
+                'numero_orden' => $numeroOrden,
                 'fecha' => now(),
                 'mesa_id' => $mesa->id,
                 'estatus' => 'pendiente',
@@ -379,10 +388,21 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
                     'updated_at' => now(),
                 ]);
             }
+        } // close if ($factura)
+        
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'factura_id' => $factura->id ?? null]);
         }
         
-        return redirect()->route('admin.mesas')->with('success', 'Factura cobrada y mesa liberada.');
+        return redirect()->route('admin.mesas')
+            ->with('success', 'Factura cobrada y mesa liberada.')
+            ->with('print_factura_id', $factura->id ?? null);
     })->name('checkout.pay');
+
+    Route::get('/factura/{id}/pos-receipt', function ($id) {
+        $factura = Factura::with(['productos.producto', 'metodosPago'])->findOrFail($id);
+        return view('admin.pos_receipt', compact('factura'));
+    })->name('pos.receipt');
 
     // CRUD de Usuarios (Web)
     Route::get('/users', function () {
@@ -532,8 +552,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         ]);
     })->name('alquiler.edit');
 
-    Route::get('/alquiler/list', function () {
-        $facturas = Factura::where('tipo', 'evento')->orderBy('fecha', 'desc')->paginate(20);
+    Route::get('/alquiler/list', function (Request $request) {
+        $query = Factura::query();
+        
+        if ($request->filled('tipo') && $request->tipo !== 'todos') {
+            $query->where('tipo', $request->tipo);
+        }
+        
+        $facturas = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(20);
         $mesas = Mesa::orderBy('nombre')->get();
         return view('admin.alquiler_list', compact('facturas', 'mesas'));
     })->name('alquiler.list');

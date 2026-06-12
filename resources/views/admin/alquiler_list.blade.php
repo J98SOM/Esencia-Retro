@@ -6,10 +6,17 @@
 <div class="p-6 lg:p-8 flex-1">
     <header class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-2xl font-extrabold text-white">Alquileres (evento)</h2>
+            <h2 class="text-2xl font-extrabold text-white">Facturas (General)</h2>
             <p class="text-sm text-on-surface-variant">Total: {{ $facturas->total() }}</p>
         </div>
-        <div>
+        <div class="flex items-center gap-4">
+            <form method="GET" action="{{ route('admin.alquiler.list') }}" class="flex items-center gap-2">
+                <select name="tipo" onchange="this.form.submit()" class="bg-surface-container-high border border-white/10 text-white text-xs rounded-lg px-3 py-2">
+                    <option value="todos" {{ request('tipo') == 'todos' ? 'selected' : '' }}>Todas</option>
+                    <option value="evento" {{ request('tipo') == 'evento' ? 'selected' : '' }}>Alquiler (Evento)</option>
+                    <option value="pos" {{ request('tipo') == 'pos' ? 'selected' : '' }}>Punto de Venta (POS)</option>
+                </select>
+            </form>
             <a href="{{ route('admin.alquiler') }}" class="px-4 py-2 rounded-xl bg-primary text-on-primary font-bold uppercase tracking-widest text-xs">Nuevo Alquiler</a>
         </div>
     </header>
@@ -26,6 +33,7 @@
                 <thead>
                     <tr class="text-xs text-on-surface-variant uppercase tracking-widest border-b border-white/10">
                         <th class="p-3 text-left">No. Orden</th>
+                        <th class="p-3 text-left">Tipo</th>
                         <th class="p-3 text-left">Fecha</th>
                         <th class="p-3 text-left">Cliente</th>
                         <th class="p-3 text-left">NIT</th>
@@ -37,6 +45,13 @@
                     @forelse($facturas as $f)
                         <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                             <td class="p-3 text-white font-bold">{{ $f->numero_orden }}</td>
+                            <td class="p-3 text-white font-bold">
+                                @if($f->tipo === 'pos')
+                                    <span class="px-2 py-1 rounded-md bg-blue-500/20 text-blue-400 text-[10px] uppercase">POS</span>
+                                @else
+                                    <span class="px-2 py-1 rounded-md bg-purple-500/20 text-purple-400 text-[10px] uppercase">Alquiler</span>
+                                @endif
+                            </td>
                             <td class="p-3 text-slate-300">{{ $f->fecha }}</td>
                             <td class="p-3 text-slate-300">{{ $f->persona }}</td>
                             <td class="p-3 text-slate-300">{{ $f->nit }}</td>
@@ -47,7 +62,11 @@
                                     <button onclick="verAlquiler('{{ $f->id }}')" class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-all">Ver</button>
                                     
                                     <!-- Editar -->
-                                    <a href="{{ route('admin.alquiler.edit', $f->id) }}" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all">Editar</a>
+                                    @if($f->tipo === 'pos' && $f->mesa_id)
+                                        <a href="{{ route('admin.pedido', $f->mesa_id) }}" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all">Editar</a>
+                                    @else
+                                        <a href="{{ route('admin.alquiler.edit', $f->id) }}" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all">Editar</a>
+                                    @endif
 
                                     <!-- Eliminar -->
                                     <form action="{{ route('admin.alquiler.delete', $f->id) }}" method="POST" onsubmit="return confirm('¿Eliminar factura #{{ $f->numero_orden }}?');" class="inline">
@@ -60,7 +79,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-6 text-center text-sm text-slate-400">No hay alquileres registrados.</td>
+                            <td colspan="7" class="p-6 text-center text-sm text-slate-400">No hay facturas registradas.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -115,7 +115,7 @@
             <div class="flex items-center gap-3">
                 <img src="{{ asset('img/icon.png') }}" class="w-8 h-8 mix-blend-screen" alt="App Icon">
                 <div class="flex flex-col">
-                    <span class="text-xs font-black text-primary uppercase tracking-[0.2em] mb-0.5">Esencia Retro • Terminal 01</span>
+                    <span class="text-xs font-black text-primary uppercase tracking-[0.2em] mb-0.5">Esencia Retro • Orden #{{ $factura->numero_orden ?? 'Pendiente' }}</span>
                     <span class="text-sm font-semibold text-white/90">Volver a Pedido</span>
                 </div>
             </div>
@@ -241,7 +241,7 @@
                 </div>
 
                 <div class="mt-8 pt-4">
-                    <form action="{{ route('admin.checkout.pay', ['id' => $mesaId]) }}" method="POST">
+                    <form id="checkout-form" action="{{ route('admin.checkout.pay', ['id' => $mesaId]) }}" method="POST">
                         @csrf
                         <input type="hidden" name="monto_efectivo" id="hidden-efectivo" value="0">
                         <input type="hidden" name="monto_tarjeta" id="hidden-tarjeta" value="0">
@@ -355,6 +355,135 @@
                     updateChange();
                 });
             });
+
+            const checkoutForm = document.getElementById('checkout-form');
+            if (checkoutForm) {
+                const items = @json($items->map(fn($item) => ['cantidad' => intval($item->cantidad), 'nombre' => $item->producto->nombre ?? $item->descripcion, 'total' => $item->cantidad * $item->precio_unitario]));
+                const orderNumber = '{{ $factura->numero_orden ?? str_pad($factura->id, 4, "0", STR_PAD_LEFT) }}';
+                const mesaNombre = '{{ $mesa->nombre ?? "POS" }}';
+                
+                @php
+                    $logoPath = public_path('img/logo.png');
+                    $logoBase64 = '';
+                    if (file_exists($logoPath)) {
+                        $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
+                @endphp
+                const logoSrc = '{!! $logoBase64 !!}';
+
+                checkoutForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const valEfectivo = parseAmount(inputEfectivo.value);
+                    const valTarjeta = parseAmount(inputTarjeta.value);
+                    const valQr = parseAmount(inputQr.value);
+                    const received = valEfectivo + valTarjeta + valQr;
+                    
+                    if (received < total) {
+                        alert('El monto recibido es menor al total a pagar.');
+                        return;
+                    }
+
+                    if(confirm('¿Desea imprimir el ticket de la factura cobrada?')) {
+                        const printWindow = window.open('', '_blank', 'width=400,height=600');
+                        
+                        let itemsHtml = '';
+                        items.forEach(item => {
+                            itemsHtml += `
+                                <tr>
+                                    <td class="col-qty">${item.cantidad}</td>
+                                    <td class="col-desc">${item.nombre}</td>
+                                    <td class="col-total">$${new Intl.NumberFormat('es-CO').format(item.total)}</td>
+                                </tr>
+                            `;
+                        });
+
+                        let pagosHtml = '';
+                        if (valEfectivo > 0) pagosHtml += `<tr><td class="text-left uppercase">EFECTIVO</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(valEfectivo)}</td></tr>`;
+                        if (valTarjeta > 0) pagosHtml += `<tr><td class="text-left uppercase">TARJETA</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(valTarjeta)}</td></tr>`;
+                        if (valQr > 0) pagosHtml += `<tr><td class="text-left uppercase">QR / TRANSF</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(valQr)}</td></tr>`;
+
+                        let cambioHtml = '';
+                        const change = Math.max(0, received - total);
+                        if (change > 0) {
+                            cambioHtml = `<tr><td class="text-left uppercase font-bold mt-2">CAMBIO</td><td class="text-right font-bold mt-2">$${new Intl.NumberFormat('es-CO').format(change)}</td></tr>`;
+                        }
+
+                        const dateStr = new Date().toLocaleString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+                        const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #${orderNumber}</title>
+    <style>
+        @page { margin: 0; padding: 0; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; margin: 0 auto; padding: 10px; width: 300px; }
+        .text-center { text-align: center; } .text-right { text-align: right; } .text-left { text-align: left; }
+        .font-bold { font-weight: bold; } .uppercase { text-transform: uppercase; }
+        .mb-1 { margin-bottom: 5px; } .mb-2 { margin-bottom: 10px; } .mt-2 { margin-top: 10px; }
+        .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
+        .logo { width: 180px; margin: 0 auto -15px; display: block; filter: grayscale(100%); }
+        table { width: 100%; border-collapse: collapse; }
+        table th, table td { padding: 2px 0; vertical-align: top; }
+        .col-qty { width: 15%; } .col-desc { width: 55%; } .col-total { width: 30%; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="text-center mb-2">
+        <img src="${logoSrc}" class="logo" alt="Logo">
+        <div class="font-bold uppercase">ESENCIA RETRO</div>
+        <div>NIT: 1,007,450,540</div>
+        <div>Tel: 3162218491 - 3209180085</div>
+        <div>Ciudad Bogotá</div>
+        <div>Correo: esenciaretro10@gmail.com</div>
+    </div>
+    <div class="divider"></div>
+    <div class="mb-2">
+        <div><span class="font-bold">Ticket:</span> #${orderNumber}</div>
+        <div><span class="font-bold">Fecha:</span> ${dateStr}</div>
+        <div><span class="font-bold">Mesa:</span> ${mesaNombre}</div>
+    </div>
+    <div class="divider"></div>
+    <table class="mb-2">
+        <thead>
+            <tr><th class="text-left col-qty">Cant</th><th class="text-left col-desc">Producto</th><th class="text-right col-total">Total</th></tr>
+        </thead>
+        <tbody>
+            ${itemsHtml}
+        </tbody>
+    </table>
+    <div class="divider"></div>
+    <table class="mb-2 font-bold">
+        <tr><td class="text-left uppercase">Total a Pagar</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(total)}</td></tr>
+    </table>
+    <div class="divider"></div>
+    <table class="mb-2">
+        ${pagosHtml}
+        ${cambioHtml}
+    </table>
+    <div class="divider"></div>
+    <div class="text-center mt-2">
+        <div class="font-bold uppercase mb-1">¡Gracias por su visita!</div>
+        <div>Vuelva pronto</div>
+    </div>
+    <script>
+        window.onload = function() { window.print(); }
+        window.onafterprint = function() { window.close(); }
+    <\/script>
+</body>
+</html>`;
+                        printWindow.document.open();
+                        printWindow.document.write(html);
+                        printWindow.document.close();
+
+                        this.submit();
+                    } else {
+                        this.submit();
+                    }
+                });
+            }
         });
     </script>
 

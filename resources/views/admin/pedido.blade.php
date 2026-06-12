@@ -19,11 +19,16 @@
                 <span class="px-3 py-1 bg-primary/20 text-primary rounded-lg text-sm uppercase tracking-widest font-black">
                     Mesa {{ $mesaId ?? '00' }}
                 </span>
+                @if(isset($factura) && $factura->numero_orden)
+                <span class="px-3 py-1 bg-white/10 text-white rounded-lg text-sm uppercase tracking-widest font-black">
+                    Orden #{{ $factura->numero_orden }}
+                </span>
+                @endif
             </h2>
             <p class="text-on-surface-variant text-sm mt-1">Añade o modifica los productos ordenados en esta mesa.</p>
         </div>
         <div class="flex items-center gap-4">
-            <button onclick="alert('Enviando instrucción a la impresora térmica...')" class="bg-surface-container-high hover:bg-surface-bright text-on-surface p-3 rounded-xl transition-colors font-bold flex items-center gap-2">
+            <button @if(isset($factura) && $factura->id) onclick="window.open('{{ route('admin.pos.receipt', $factura->id) }}', '_blank', 'width=400,height=600')" @else onclick="alert('No hay una factura activa para imprimir.')" @endif class="bg-surface-container-high hover:bg-surface-bright text-on-surface p-3 rounded-xl transition-colors font-bold flex items-center gap-2">
                 <span class="material-symbols-outlined">print</span>
                 Imprimir Pre-cuenta
             </button>
@@ -58,11 +63,11 @@
                             </div>
                             <div>
                                 <p class="font-bold text-white text-lg">{{ $prod->nombre ?? $item->descripcion }}</p>
-                                <p class="text-slate-500 text-xs mt-1">Precio unitario: ${{ number_format($item->precio_unitario, 2) }}</p>
+                                <p class="text-slate-500 text-xs mt-1">Precio unitario: ${{ number_format($item->precio_unitario, 0, ',', '.') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-6">
-                            <p class="text-lg font-bold text-white">${{ number_format($precioTotal, 2) }}</p>
+                            <p class="text-lg font-bold text-white">${{ number_format($precioTotal, 0, ',', '.') }}</p>
                             <form action="{{ route('admin.pedido.delete_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
@@ -88,20 +93,12 @@
                 <div class="space-y-4 text-sm mb-6">
                     <div class="flex justify-between text-on-surface-variant">
                         <span>Subtotal</span>
-                        <span class="font-bold text-white">${{ number_format($total, 2) }}</span>
-                    </div>
-                    <div class="flex justify-between text-on-surface-variant">
-                        <span>Impuestos (10%)</span>
-                        <span class="font-bold text-white">${{ number_format($total * 0.10, 2) }}</span>
-                    </div>
-                    <div class="flex justify-between text-on-surface-variant">
-                        <span>Propina sugerida</span>
-                        <span class="font-bold text-white">${{ number_format($total * 0.10, 2) }}</span>
+                        <span class="font-bold text-white">${{ number_format($total, 0, ',', '.') }}</span>
                     </div>
                 </div>
                 <div class="pt-6 border-t border-white/5 flex justify-between items-center mb-6">
                     <span class="text-lg font-bold text-on-surface">Total</span>
-                    <span class="text-3xl font-black text-primary">${{ number_format($total + ($total * 0.20), 2) }}</span>
+                    <span class="text-3xl font-black text-primary">${{ number_format($total, 0, ',', '.') }}</span>
                 </div>
                 <button onclick="window.location.href='{{ route('admin.checkout', ['id' => $mesaId]) }}'" class="w-full py-4 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 hover:scale-[0.98] transition-all">
                     Cobrar Mesa
