@@ -168,7 +168,7 @@ class AlquilerController extends Controller
             return response()->json([
                 'message' => 'Factura creada',
                 'factura_id' => $factura->id,
-                'redirect' => route('alquiler.list'),
+                'redirect' => route('admin.alquiler.list'),
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -351,7 +351,7 @@ class AlquilerController extends Controller
                 'source' => 'alquiler',
             ]);
 
-            return response()->json(['message' => 'Factura actualizada', 'factura_id' => $factura->id, 'redirect' => route('alquiler.list')]);
+            return response()->json(['message' => 'Factura actualizada', 'factura_id' => $factura->id, 'redirect' => route('admin.alquiler.list')]);
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error actualizando factura: '.$e->getMessage(), ['exception' => $e]);

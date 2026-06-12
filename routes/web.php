@@ -461,13 +461,92 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return view('admin.reportes');
     })->name('reportes');
 
-    Route::get('/alquiler', function () {
-        return view('admin.alquiler');
+    Route::get('/alquiler', function (Request $request) {
+        $max = DB::table('facturas')->where('tipo', 'evento')->select(DB::raw('MAX(CAST(numero_orden AS UNSIGNED)) as max'))->value('max');
+        $next = $max ? intval($max) + 1 : 1;
+        $nextStr = str_pad($next, 4, '0', STR_PAD_LEFT);
+
+        $factura = null;
+        $items = [];
+        $metodos = [];
+
+        if ($request->query('factura_id')) {
+            $factura = Factura::with(['productos', 'metodosPago'])->find($request->query('factura_id'));
+            if ($factura) {
+                foreach ($factura->productos as $it) {
+                    $items[] = [
+                        'desc' => $it->descripcion ?? ($it->producto?->nombre ?? ''),
+                        'cant' => $it->cantidad,
+                        'precio' => $it->precio_unitario,
+                        'producto_id' => $it->producto_id ?? null,
+                    ];
+                }
+                foreach ($factura->metodosPago as $m) {
+                    $metodos[] = ['metodo' => $m->metodo, 'valor' => $m->valor];
+                }
+            }
+        }
+
+        $products = Producto::select('id', 'nombre', 'precio')->get();
+
+        return view('admin.alquiler', [
+            'nextInvoiceNo' => $nextStr,
+            'factura' => $factura,
+            'items' => $items,
+            'metodos' => $metodos,
+            'products' => $products,
+            'mesa_id' => $request->query('mesa_id'),
+        ]);
     })->name('alquiler');
 
+    Route::get('/alquiler/{id}/edit', function ($id) {
+        $max = DB::table('facturas')->where('tipo', 'evento')->select(DB::raw('MAX(CAST(numero_orden AS UNSIGNED)) as max'))->value('max');
+        $next = $max ? intval($max) + 1 : 1;
+        $nextStr = str_pad($next, 4, '0', STR_PAD_LEFT);
+
+        $factura = Factura::with(['productos', 'metodosPago'])->find($id);
+        $items = [];
+        $metodos = [];
+        if ($factura) {
+            foreach ($factura->productos as $it) {
+                $items[] = [
+                    'desc' => $it->descripcion ?? ($it->producto?->nombre ?? ''),
+                    'cant' => $it->cantidad,
+                    'precio' => $it->precio_unitario,
+                    'producto_id' => $it->producto_id ?? null,
+                ];
+            }
+            foreach ($factura->metodosPago as $m) {
+                $metodos[] = ['metodo' => $m->metodo, 'valor' => $m->valor];
+            }
+        }
+
+        $products = Producto::select('id', 'nombre', 'precio')->get();
+
+        return view('admin.alquiler', [
+            'nextInvoiceNo' => $nextStr,
+            'factura' => $factura,
+            'items' => $items,
+            'metodos' => $metodos,
+            'products' => $products,
+        ]);
+    })->name('alquiler.edit');
+
     Route::get('/alquiler/list', function () {
-        return view('admin.alquiler_list');
+        $facturas = Factura::where('tipo', 'evento')->orderBy('fecha', 'desc')->paginate(20);
+        $mesas = Mesa::orderBy('nombre')->get();
+        return view('admin.alquiler_list', compact('facturas', 'mesas'));
     })->name('alquiler.list');
+
+    Route::post('/alquiler/store', [AlquilerController::class, 'store'])->name('alquiler.store');
+    Route::post('/alquiler/update', [AlquilerController::class, 'update'])->name('alquiler.update');
+
+    Route::delete('/alquiler/{id}', function ($id) {
+        ProductoXFactura::where('factura_id', $id)->delete();
+        \App\Models\MetodoPago::where('factura_id', $id)->delete();
+        Factura::destroy($id);
+        return redirect()->route('admin.alquiler.list')->with('status', 'Factura eliminada');
+    })->name('alquiler.delete');
 
     // Cocina (Web)
     Route::get('/cocina', function () {
