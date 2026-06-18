@@ -42,6 +42,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Alias for rol relationship.
+     */
+    public function role(): BelongsTo
+    {
+        return $this->rol();
+    }
+
+    /**
      * Get the API tokens relationship.
      */
     public function apiTokens(): HasMany

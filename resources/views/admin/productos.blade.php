@@ -59,7 +59,7 @@
             <div class="text-sm text-on-surface-variant">Resultados: <span id="productos-count">{{ $productos->count() }}</span></div>
         </div>
 
-        <div id="productos-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8">
+        <div id="productos-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
             @foreach($productos as $p)
                 <div class="product-item-card group relative overflow-hidden rounded-xl bg-surface-container-low p-4 transition-all hover:bg-surface-container-high" data-categoria="{{ $p->categoria }}" data-nombre="{{ strtolower($p->nombre) }}">
                     <div class="aspect-square rounded-lg overflow-hidden mb-4 relative bg-surface-container-highest">
@@ -69,9 +69,9 @@
                             <div class="w-full h-full flex items-center justify-center text-on-surface-variant">Sin imagen</div>
                         @endif
                     </div>
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="text-lg font-bold text-white group-hover:text-primary transition-colors">{{ $p->nombre }}</h3>
-                        <span class="text-lg font-black text-secondary-fixed-dim">${{ number_format($p->precio, 2) }}</span>
+                    <div class="flex flex-col gap-1 mb-2">
+                        <h3 class="text-sm md:text-base font-bold text-white group-hover:text-primary transition-colors truncate" title="{{ $p->nombre }}">{{ $p->nombre }}</h3>
+                        <span class="text-sm md:text-base font-black text-primary">${{ number_format($p->precio, 2) }}</span>
                     </div>
                     <p class="text-xs text-on-surface-variant uppercase tracking-widest font-bold mb-4">{{ $p->categoria }}</p>
                     <div class="flex items-center justify-between pt-4 border-t border-white/5">

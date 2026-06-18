@@ -14,7 +14,7 @@
                 <select name="tipo" onchange="this.form.submit()" class="bg-surface-container-high border border-white/10 text-white text-xs rounded-lg px-3 py-2">
                     <option value="todos" {{ request('tipo') == 'todos' ? 'selected' : '' }}>Todas</option>
                     <option value="evento" {{ request('tipo') == 'evento' ? 'selected' : '' }}>Alquiler (Evento)</option>
-                    <option value="pos" {{ request('tipo') == 'pos' ? 'selected' : '' }}>Punto de Venta (POS)</option>
+                    <option value="pos" {{ request('tipo', 'pos') == 'pos' ? 'selected' : '' }}>Punto de Venta (POS)</option>
                 </select>
             </form>
             <a href="{{ route('admin.alquiler') }}" class="px-4 py-2 rounded-xl bg-primary text-on-primary font-bold uppercase tracking-widest text-xs">Nuevo Alquiler</a>
@@ -58,12 +58,16 @@
                             <td class="p-3 text-right text-white font-semibold">{{ isset($f->monto_total) ? '$'.number_format($f->monto_total,0,',','.') : '$0' }}</td>
                             <td class="p-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <!-- Ver (carga en el form y abre) -->
-                                    <button onclick="verAlquiler('{{ $f->id }}')" class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-all">Ver</button>
+                                    <!-- Ver (carga en el form o abre ticket) -->
+                                    @if($f->tipo === 'pos')
+                                        <button onclick="window.open('{{ route('admin.pos.receipt', $f->id) }}', '_blank', 'width=400,height=600')" class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-all">Ver</button>
+                                    @else
+                                        <button onclick="verAlquiler('{{ $f->id }}')" class="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary hover:text-on-primary transition-all">Ver</button>
+                                    @endif
                                     
                                     <!-- Editar -->
-                                    @if($f->tipo === 'pos' && $f->mesa_id)
-                                        <a href="{{ route('admin.pedido', $f->mesa_id) }}" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all">Editar</a>
+                                    @if($f->tipo === 'pos')
+                                        <a href="{{ route('admin.pedido', ['id' => $f->mesa_id ?? '1', 'factura_id' => $f->id]) }}" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all">Editar</a>
                                     @else
                                         <a href="{{ route('admin.alquiler.edit', $f->id) }}" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all">Editar</a>
                                     @endif

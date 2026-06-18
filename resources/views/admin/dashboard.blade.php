@@ -16,12 +16,6 @@
                 <input type="text" placeholder="Buscar pedido, mesa o producto..."
                        class="w-full bg-surface-container-low border border-outline-variant/10 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
             </div>
-            <div class="relative">
-                <button class="bg-surface-container-low p-3 rounded-xl hover:bg-surface-container transition-colors">
-                    <span class="material-symbols-outlined text-primary">notifications</span>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface-dim"></span>
-                </button>
-            </div>
         </div>
     </header>
 
@@ -69,11 +63,11 @@
         <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group border border-error/5">
             <div class="relative z-10">
                 <p class="font-['Inter'] uppercase tracking-widest text-[10px] text-slate-500 mb-4">Alertas de Inventario</p>
-                <h3 class="text-3xl font-bold text-error">3</h3>
-                <p class="text-on-surface-variant text-sm mt-1">Artículos críticos</p>
+                <h3 class="text-3xl font-bold {{ $alertasInventario > 0 ? 'text-error' : 'text-emerald-400' }}">{{ $alertasInventario }}</h3>
+                <p class="text-on-surface-variant text-sm mt-1">{{ $alertasInventario == 1 ? 'Artículo crítico' : 'Artículos críticos' }}</p>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
-                <span class="material-symbols-outlined text-9xl text-error">warning</span>
+                <span class="material-symbols-outlined text-9xl {{ $alertasInventario > 0 ? 'text-error' : 'text-emerald-400' }}">{{ $alertasInventario > 0 ? 'warning' : 'check_circle' }}</span>
             </div>
         </div>
     </div>
@@ -85,7 +79,7 @@
             <div class="flex justify-between items-end mb-6">
                 <div>
                     <h4 class="text-xl font-bold text-white">Estado de Mesas</h4>
-                    <p class="text-sm text-on-surface-variant">Vista en tiempo real del salón principal (17 mesas)</p>
+                    <p class="text-sm text-on-surface-variant">Vista en tiempo real del salón principal ({{ $mesas->count() }} {{ $mesas->count() == 1 ? 'mesa' : 'mesas' }})</p>
                 </div>
                 <div class="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
                     <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-secondary"></span> Libre</div>
@@ -116,44 +110,61 @@
             ];
             @endphp
 
-            <div id="dashboard-mesas-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+            <div id="dashboard-mesas-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 <!-- Mesa Items loop -->
                 @foreach($mesasMock as $m)
                     @if($m['estado'] === 'Ocupada')
-                    <div class="bg-surface-container p-6 rounded-xl border border-white/5 hover:border-primary/20 transition-all group active-glow">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group active-glow">
+                        <div class="flex justify-between items-center mb-4">
                             <span class="text-lg font-bold text-white">M-{{ $m['numero'] }}</span>
-                            <span class="w-3 h-3 rounded-full bg-primary-container shadow-[0_0_8px_rgba(208,188,255,0.5)]"></span>
+                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary-container/10 text-primary-container border border-primary-container/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_rgba(208,188,255,0.5)]"></span>
+                                Ocupada
+                            </div>
                         </div>
-                        <p class="text-[10px] font-['Inter'] uppercase tracking-widest text-primary mb-1">Ocupada</p>
-                        <p class="text-xs text-on-surface-variant">Capacidad: {{ $m['pax'] }} personas</p>
-                        <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
+                        <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
+                            <span class="material-symbols-outlined text-base">group</span>
+                            <span class="text-xs font-medium">{{ $m['pax'] }} personas</span>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center gap-2">
                             <span class="text-sm font-bold text-white">${{ number_format($m['total'], 2) }}</span>
-                            <a href="{{ route('admin.pedido', ['id' => $m['id']]) }}" class="text-primary hover:text-white transition-colors">
-                                <span class="material-symbols-outlined text-lg">visibility</span>
-                            </a>
+                            <div class="flex gap-2">
+                                <a href="{{ route('admin.pedido', ['id' => $m['id']]) }}" class="p-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm" title="Ver pedido">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     @elseif($m['estado'] === 'Libre')
-                    <div class="bg-surface-container p-6 rounded-xl border border-white/5 hover:border-secondary/20 transition-all group">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-secondary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
+                        <div class="flex justify-between items-center mb-4">
                             <span class="text-lg font-bold text-white">M-{{ $m['numero'] }}</span>
-                            <span class="w-3 h-3 rounded-full bg-secondary"></span>
+                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-secondary/10 text-secondary border border-secondary/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                Libre
+                            </div>
                         </div>
-                        <p class="text-[10px] font-['Inter'] uppercase tracking-widest text-secondary mb-1">Libre</p>
-                        <p class="text-xs text-on-surface-variant">Capacidad: {{ $m['pax'] }} personas</p>
+                        <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
+                            <span class="material-symbols-outlined text-base">group</span>
+                            <span class="text-xs font-medium">{{ $m['pax'] }} personas</span>
+                        </div>
                         <div class="mt-4 pt-4 border-t border-white/5">
-                            <button onclick="openModal('modal-open-table')" class="w-full text-xs font-bold py-1 px-3 rounded-lg border border-secondary/20 text-secondary hover:bg-secondary/10 transition-all">ASIGNAR</button>
+                            <button onclick="openModal('modal-open-table')" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-secondary/20 text-secondary hover:bg-secondary hover:text-white transition-all shadow-sm">ASIGNAR</button>
                         </div>
                     </div>
                     @elseif($m['estado'] === 'Reservada')
-                    <div class="bg-surface-container p-6 rounded-xl border border-white/5 hover:border-tertiary/20 transition-all group">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-tertiary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
+                        <div class="flex justify-between items-center mb-4">
                             <span class="text-lg font-bold text-white">M-{{ $m['numero'] }}</span>
-                            <span class="w-3 h-3 rounded-full bg-tertiary-container shadow-[0_0_8px_rgba(255,180,171,0.3)]"></span>
+                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-tertiary-container shadow-[0_0_8px_rgba(255,180,171,0.3)]"></span>
+                                Reservada
+                            </div>
                         </div>
-                        <p class="text-[10px] font-['Inter'] uppercase tracking-widest text-tertiary-container mb-1">Reservada</p>
-                        <p class="text-xs text-on-surface-variant">{{ $m['hora'] }}</p>
+                        <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
+                            <span class="material-symbols-outlined text-base">calendar_today</span>
+                            <span class="text-xs font-medium">{{ $m['hora'] }}</span>
+                        </div>
                         <div class="mt-4 pt-4 border-t border-white/5">
                             <p class="text-[10px] text-on-surface-variant truncate">Cliente: {{ explode('(', $m['cliente'])[0] }}</p>
                         </div>
@@ -180,18 +191,42 @@
                     const nombre = m.nombre || m.identifier || ('Mesa ' + id);
                     const capacidad = m.capacidad || m.capacity || '';
                     const estado = (m.estado || m.status || 'libre').toString().toLowerCase();
-                    const dot = estado.includes('ocup') ? 'bg-primary-container' : (estado.includes('reserv') ? 'bg-tertiary-container' : 'bg-secondary');
+                    
+                    let bgClass = 'bg-secondary/10';
+                    let textClass = 'text-secondary';
+                    let borderClass = 'border-secondary/20';
+                    let dotBg = 'bg-secondary';
+                    
+                    if (estado.includes('ocup')) {
+                        bgClass = 'bg-primary/10';
+                        textClass = 'text-primary';
+                        borderClass = 'border-primary/20';
+                        dotBg = 'bg-primary shadow-[0_0_8px_rgba(208,188,255,0.5)]';
+                    } else if (estado.includes('reserv')) {
+                        bgClass = 'bg-tertiary-container/10';
+                        textClass = 'text-tertiary-container';
+                        borderClass = 'border-tertiary-container/20';
+                        dotBg = 'bg-tertiary-container shadow-[0_0_8px_rgba(255,180,171,0.3)]';
+                    }
+
                     return `
-                        <div class="bg-surface-container p-6 rounded-xl border border-white/5 hover:border-primary/20 transition-all group ${estado==='ocupada' ? 'active-glow' : ''}">
-                            <div class="flex justify-between items-start mb-4">
+                        <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group ${estado==='ocupada' ? 'active-glow' : ''}">
+                            <div class="flex justify-between items-center mb-4">
                                 <span class="text-lg font-bold text-white">${nombre}</span>
-                                <span class="w-3 h-3 rounded-full ${dot}"></span>
+                                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${bgClass} ${textClass} border ${borderClass}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${dotBg}"></span>
+                                    ${estado.toUpperCase()}
+                                </div>
                             </div>
-                            <p class="text-[10px] font-['Inter'] uppercase tracking-widest ${estado==='ocupada' ? 'text-primary' : estado==='reservada' ? 'text-tertiary-container' : 'text-secondary'} mb-1">${estado.toUpperCase()}</p>
-                            <p class="text-xs text-on-surface-variant">Capacidad: ${capacidad || '-' } personas</p>
-                            <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
-                                <a href="/admin/mesas/${id}/pedido" class="text-primary hover:text-white transition-colors text-sm font-bold">DETALLES</a>
-                                <button data-id="${id}" class="btn-delete-small-mesa text-xs py-1 px-3 bg-primary/10 text-primary rounded-lg">ELIMINAR</button>
+                            <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
+                                <span class="material-symbols-outlined text-base">group</span>
+                                <span class="text-xs font-medium">${capacidad || '-'} personas</span>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center gap-2">
+                                <a href="/admin/mesas/${id}/pedido" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl text-xs font-bold tracking-wide transition-all shadow-sm">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                    Detalles
+                                </a>
                             </div>
                         </div>
                     `;
@@ -209,20 +244,6 @@
                         const list = Array.isArray(data.data) ? data.data : (data.mesas || data);
                         if (!list || !list.length) { grid.innerHTML = '<p class="text-sm text-slate-400">No hay mesas.</p>'; return; }
                         grid.innerHTML = list.map(renderSmallMesa).join('');
-                        // attach delete handlers
-                        document.querySelectorAll('.btn-delete-small-mesa').forEach(b=>{
-                            b.addEventListener('click', async ()=>{
-                                const id = b.getAttribute('data-id');
-                                if (!confirm('Eliminar mesa #' + id + '?')) return;
-                                try{
-                                    const token = localStorage.getItem('auth_token');
-                                    const headers = { 'Accept':'application/json' };
-                                    if (token) headers['Authorization'] = 'Bearer ' + token;
-                                    const r = await fetch(apiBase() + '/mesas/' + id, { method: 'DELETE', headers });
-                                    if (r.ok) fetchDashboardMesas();
-                                }catch(e){ console.error(e); }
-                            });
-                        });
                     }catch(e){ grid.innerHTML = '<p class="text-sm text-red-400">Error cargando mesas</p>'; }
                 }
 
@@ -248,78 +269,30 @@
         <div class="space-y-8">
             <section>
                 <div class="flex items-center gap-3 mb-6">
-                    <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+                    <span class="material-symbols-outlined {{ $alertasInventario > 0 ? 'text-error' : 'text-emerald-400' }}" style="font-variation-settings: 'FILL' 1;">{{ $alertasInventario > 0 ? 'warning' : 'check_circle' }}</span>
                     <h4 class="text-xl font-bold text-white">Alertas del Sistema</h4>
                 </div>
 
-                <div class="bg-surface-container-low rounded-2xl p-2 space-y-2">
-                    <div class="bg-error-container/20 p-4 rounded-xl flex items-center gap-4 border border-error/10">
-                        <div class="w-12 h-12 rounded-lg bg-error-container flex items-center justify-center">
-                            <span class="material-symbols-outlined text-on-error-container">kitchen</span>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-bold text-white">Papas fritas</p>
-                            <p class="text-xs text-on-surface-variant">Stock: 2.5kg (Crítico)</p>
-                        </div>
-                        <button class="bg-surface-container-highest p-2 rounded-lg hover:text-error transition-colors">
-                            <span class="material-symbols-outlined text-sm">shopping_cart</span>
-                        </button>
-                    </div>
-
-                    <div class="bg-surface-container-high/40 p-4 rounded-xl flex items-center gap-4 border border-white/5">
-                        <div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center">
-                            <span class="material-symbols-outlined text-secondary">sports_bar</span>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-bold text-white">Cerveza artesanal</p>
-                            <p class="text-xs text-on-surface-variant">Stock: 15L (Bajo)</p>
-                        </div>
-                        <button class="bg-surface-container-highest p-2 rounded-lg transition-colors">
-                            <span class="material-symbols-outlined text-sm">shopping_cart</span>
-                        </button>
-                    </div>
-
-                    <div class="bg-surface-container-high/40 p-4 rounded-xl flex items-center gap-4 border border-white/5">
-                        <div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center">
-                            <span class="material-symbols-outlined text-primary">oil_barrel</span>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-bold text-white">Aceite de oliva</p>
-                            <p class="text-xs text-on-surface-variant">Stock: 2L (Bajo)</p>
-                        </div>
-                        <button class="bg-surface-container-highest p-2 rounded-lg transition-colors">
-                            <span class="material-symbols-outlined text-sm">shopping_cart</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <h4 class="text-xl font-bold text-white mb-6">Staff en Turno</h4>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
-                        <div class="flex items-center gap-3">
-                            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWJQdxZyVfCJSj5oEgqxx4cUY0R3Oo8nuBCkBXoZEAay96YjQsz7yIZt40ThNrdm42lfaFV8NHbL7i2cDJ1isNg_mEF8Q8TxcM-4pbB9dqnboU4yGsGpMUlYLmfrz6EaVgYUTjYPSSNSQSh_V4DbBO0yOfvolAvMQEk0tXnEE3lT28foV91PBLaT0BEwKuo4fURfkUep3KZUoHZibctE7u3XJ2JRu8C8SbL5Bj92pcs-QUOTYDicJvD8YhErtCf6PynO4ebB3hrjRV" 
-                                 class="w-10 h-10 rounded-full object-cover" alt="Elena"/>
-                            <div>
-                                <p class="text-sm font-bold text-white">Elena Martínez</p>
-                                <p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Capitana</p>
+                <div class="bg-surface-container-low rounded-2xl p-3 space-y-3">
+                    @forelse($alertas as $a)
+                        <div class="bg-error-container/10 p-4 rounded-xl flex items-center gap-4 border border-error/20">
+                            <div class="w-12 h-12 rounded-lg bg-error/10 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-error">warning</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-white truncate">{{ $a->nombre }}</p>
+                                <p class="text-xs text-on-surface-variant font-medium">Stock: {{ $a->stock_inicial }} (Mínimo: {{ $a->stock_minimo }})</p>
                             </div>
                         </div>
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
-                        <div class="flex items-center gap-3">
-                            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMprHGKeSFAfyDLUmvEeoj_us3InAdAuzbxaTFH-4FvnRyrcOytV65p1OXfDIx6BZl4wVpAnQ0ocRnY42_OkTHc2spGqEwvN5j5vbg1B46JKCy6JMov1NrMsBLcov6P_gEOpwSgDiJSo6nfo4HifR1CnLuHl2wlgUJHz9pvAK2wJjpwJMWwQ32epLl4QSXOwVbk0BDfKVbzaMA45Ij10F-T-b2g0MS85HXzzM_Poserqk_J5Jotyil-_ygavk1ZRgIInK-QnesMlAk" 
-                                 class="w-10 h-10 rounded-full object-cover" alt="Marco"/>
-                            <div>
-                                <p class="text-sm font-bold text-white">Marco Polo</p>
-                                <p class="text-[10px] text-on-surface-variant uppercase tracking-wider">Chef Ejecutivo</p>
+                    @empty
+                        <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-xl flex flex-col items-center justify-center gap-3">
+                            <span class="material-symbols-outlined text-4xl">verified</span>
+                            <div class="text-center">
+                                <p class="font-black text-sm text-white">¡Todo en Orden!</p>
+                                <p class="text-xs text-slate-400 mt-1">No hay insumos con stock crítico en este momento.</p>
                             </div>
                         </div>
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span>
-                    </div>
+                    @endforelse
                 </div>
             </section>
         </div>

@@ -24,7 +24,7 @@
         </div>
         
         <!-- Dashboard Tab -->
-        @if(in_array($roleName, ['admin', 'mesero', 'waiter', 'kitchen', 'cocina']))
+        @if(in_array($roleName, ['admin', 'mesero', 'cocina']))
         <a href="{{ route('admin.dashboard') }}"
             class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.dashboard') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
@@ -51,7 +51,7 @@
         @endif
 
         <!-- Tables Tab -->
-        @if(in_array($roleName, ['admin', 'mesero', 'waiter', 'kitchen', 'cocina']))
+        @if(in_array($roleName, ['admin', 'mesero', 'cocina']))
         <a href="{{ route('admin.mesas') }}"
             class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.mesas') || request()->routeIs('admin.pedido') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">table_restaurant</span>
@@ -60,7 +60,7 @@
         @endif
 
         <!-- Kitchen / Cocina Tab -->
-        @if(in_array($roleName, ['admin', 'kitchen', 'cocina']))
+        @if(in_array($roleName, ['admin', 'cocina']))
         <a href="{{ route('admin.cocina') }}"
             class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.cocina') ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">restaurant_menu</span>
@@ -96,7 +96,7 @@
         @endif
 
         <!-- Facturas Tab -->
-        @if(in_array($roleName, ['admin', 'mesero', 'waiter', 'kitchen', 'cocina']))
+        @if(in_array($roleName, ['admin','cocina']))
         <a href="{{ route('admin.alquiler.list') }}"
             class="nav-link flex items-center gap-3 px-4 py-3 {{ request()->routeIs('admin.alquiler.list') && request('tipo') !== 'evento' ? 'bg-primary/15 text-primary border-r-4 border-primary backdrop-blur-md rounded-l-xl' : 'text-slate-500 hover:bg-white/5 rounded-xl' }} transition-all group overflow-hidden">
             <span class="material-symbols-outlined group-hover:scale-110 transition-transform">receipt_long</span>
@@ -139,11 +139,6 @@
                 <p id="sidebar-profile-role" class="text-[10px] text-slate-500 whitespace-nowrap">{{ ucfirst($roleName) }}</p>
             </div>
         </div>
-        
-        <a href="#" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-500 hover:bg-white/5 hover:text-primary transition-all rounded-xl mb-1 overflow-hidden">
-            <span class="material-symbols-outlined text-sm">settings</span>
-            <span class="font-['Inter'] uppercase tracking-widest text-[10px] sidebar-text whitespace-nowrap">Configuración</span>
-        </a>
         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
             @csrf
         </form>

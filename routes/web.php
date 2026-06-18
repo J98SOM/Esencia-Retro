@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Hash;
+use App\Support\CloudinaryHelper;
 
 // Root redirect
 Route::get('/', function () {
@@ -106,8 +107,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         ]);
 
         if ($request->hasFile('imagen')) {
-            $path = $request->file('imagen')->store('productos', 'public');
-            $data['imagen_url'] = asset('storage/' . $path);
+            $uploaded = CloudinaryHelper::upload($request->file('imagen'));
+            $data['imagen_url'] = $uploaded['secure_url'];
+            $data['imagen_public_id'] = $uploaded['public_id'];
         }
 
         Producto::create($data);
@@ -124,8 +126,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         ]);
 
         if ($request->hasFile('imagen')) {
-            $path = $request->file('imagen')->store('productos', 'public');
-            $data['imagen_url'] = asset('storage/' . $path);
+            CloudinaryHelper::deleteProductImage($producto);
+            $uploaded = CloudinaryHelper::upload($request->file('imagen'));
+            $data['imagen_url'] = $uploaded['secure_url'];
+            $data['imagen_public_id'] = $uploaded['public_id'];
         }
 
         $producto->update($data);
@@ -134,6 +138,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::post('/productos/{id}/delete', function ($id) {
         $producto = Producto::findOrFail($id);
+        CloudinaryHelper::deleteProductImage($producto);
         $producto->delete();
         return redirect()->route('admin.productos')->with('success', 'Producto eliminado correctamente.');
     })->name('productos.delete');
@@ -142,7 +147,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/inventario', function () {
         $inventarios = Inventario::with('producto')->get();
         $productos = Producto::all();
-        return view('admin.inventario', compact('inventarios', 'productos'));
+        $alertasInventario = Inventario::whereRaw('stock_inicial <= stock_minimo')->count();
+        return view('admin.inventario', compact('inventarios', 'productos', 'alertasInventario'));
     })->name('inventario');
 
     Route::post('/inventario', function (Request $request) {
@@ -406,7 +412,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // CRUD de Usuarios (Web)
     Route::get('/users', function () {
-        $users = User::with('role')->get();
+        $users = User::with('rol')->get();
         $roles = Role::all();
         return view('admin.users', compact('users', 'roles'));
     })->name('users');
@@ -555,8 +561,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/alquiler/list', function (Request $request) {
         $query = Factura::query();
         
-        if ($request->filled('tipo') && $request->tipo !== 'todos') {
-            $query->where('tipo', $request->tipo);
+        // Default to 'pos' so only invoices appear by default (hiding rentals unless explicitly filtered)
+        $tipo = $request->input('tipo', 'pos');
+        
+        if ($tipo !== 'todos') {
+            $query->where('tipo', $tipo);
         }
         
         $facturas = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(20);
