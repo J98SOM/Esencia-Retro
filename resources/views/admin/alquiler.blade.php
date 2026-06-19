@@ -29,6 +29,10 @@
                 <span class="material-symbols-outlined text-sm">refresh</span>
                 <span>Limpiar</span>
             </button>
+            <a href="{{ route('admin.alquiler.list') }}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-surface-variant hover:bg-white/5 hover:text-white transition-all text-xs font-bold uppercase tracking-widest">
+                <span class="material-symbols-outlined text-sm">list</span>
+                <span>Ver listado</span>
+            </a>
             <button onclick="imprimirFactura()"
                     class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20
                            text-primary hover:bg-primary hover:text-on-primary transition-all text-xs font-bold uppercase tracking-widest">
@@ -41,6 +45,9 @@
     {{-- ── Invoice Card ─────────────────────────────────────────── --}}
     <div id="factura-alquiler" class="bg-surface-container-low border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
 
+        {{-- Hidden input to indicate editing and carry factura id (if any) --}}
+        <input type="hidden" id="factura-id" data-editing="{{ isset($factura) && $factura->id ? '1' : '0' }}" value="{{ $factura->id ?? '' }}">
+
         {{-- Empresa Header --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-0 border-b border-white/10">
 
@@ -52,7 +59,7 @@
                          class="w-full h-full object-contain mix-blend-screen p-1">
                 </div>
                 <div class="space-y-1">
-                    <p class="text-white font-black text-sm tracking-wide">ESENCIA RETRO</p>
+                    <p class="company-name text-white font-black text-sm tracking-wide">ESENCIA RETRO</p>
                     <p class="text-on-surface-variant text-xs">NIT: 1,007,450,540</p>
                     <p class="text-on-surface-variant text-xs">CR / RUT:</p>
                     <p class="text-on-surface-variant text-xs">Tel: 3162218491 - 3209180085</p>
@@ -68,22 +75,17 @@
                 <div class="space-y-3">
                     <div class="flex items-center gap-3">
                         <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">No.</label>
-                        <input type="text" id="factura-no" name="factura_no"
+                        <input type="text" id="factura-no" name="factura_no" readonly
                                class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
                                       px-3 py-2 text-white text-sm font-bold focus:outline-none focus:border-primary transition-all"
-                               placeholder="Auto">
+                               value="{{ $factura->numero_orden ?? $nextInvoiceNo ?? '' }}">
                     </div>
                     <div class="flex items-center gap-3">
                         <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Fecha</label>
                         <input type="date" id="factura-fecha" name="factura_fecha"
                                class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                      px-3 py-2 text-primary text-sm font-bold focus:outline-none focus:border-primary transition-all">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Vencimiento</label>
-                        <input type="date" id="factura-vence" name="factura_vence"
-                               class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                      px-3 py-2 text-primary text-sm font-bold focus:outline-none focus:border-primary transition-all">
+                                      px-3 py-2 text-primary text-sm font-bold focus:outline-none focus:border-primary transition-all"
+                               value="{{ $factura->fecha ?? date('Y-m-d') }}">
                     </div>
                 </div>
             </div>
@@ -96,22 +98,22 @@
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Señores</label>
                     <input type="text" id="cliente-nombre" name="cliente_nombre"
                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                  px-3 py-2 text-primary text-sm font-semibold focus:outline-none focus:border-primary transition-all"
-                           placeholder="Nombre del cliente">
+                                  px-3 py-2 text-white text-sm font-semibold focus:outline-none focus:border-primary transition-all"
+                           placeholder="Nombre del cliente" value="{{ $factura->persona ?? '' }}">
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">NIT</label>
                     <input type="text" id="cliente-nit" name="cliente_nit"
                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
                                   px-3 py-2 text-white text-sm focus:outline-none focus:border-primary transition-all"
-                           placeholder="NIT / Cédula">
+                           placeholder="NIT / Cédula" value="{{ $factura->nit ?? '' }}">
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Dirección</label>
                     <input type="text" id="cliente-direccion" name="cliente_direccion"
                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
                                   px-3 py-2 text-white text-sm focus:outline-none focus:border-primary transition-all"
-                           placeholder="Dirección">
+                           placeholder="Dirección" value="{{ $factura->direccion ?? '' }}">
                 </div>
             </div>
             <div class="p-5 space-y-3">
@@ -119,15 +121,15 @@
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Teléfono</label>
                     <input type="tel" id="cliente-telefono" name="cliente_telefono"
                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                  px-3 py-2 text-primary text-sm font-semibold focus:outline-none focus:border-primary transition-all"
-                           placeholder="Teléfono">
+                                  px-3 py-2 text-white text-sm font-semibold focus:outline-none focus:border-primary transition-all"
+                           placeholder="Teléfono" value="{{ $factura->telefono ?? '' }}">
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-24 shrink-0">Ciudad</label>
                     <input type="text" id="cliente-ciudad" name="cliente_ciudad"
                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                  px-3 py-2 text-primary text-sm font-semibold focus:outline-none focus:border-primary transition-all"
-                           placeholder="Ciudad">
+                                  px-3 py-2 text-white text-sm font-semibold focus:outline-none focus:border-primary transition-all"
+                           placeholder="Ciudad" value="{{ $factura->ciudad ?? '' }}">
                 </div>
             </div>
         </div>
@@ -139,11 +141,12 @@
             <span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
                 Cantidad de ítems:
             </span>
+            @php $itemsCount = isset($items) ? count($items) : 0; $itemsCount = $itemsCount > 0 ? $itemsCount : 5; @endphp
             <select id="items-count-selector"
                     onchange="onCantidadItemsChange(this)"
                     aria-label="Seleccionar cantidad de ítems">
                 @for($n = 1; $n <= 15; $n++)
-                    <option value="{{ $n }}" {{ $n === 5 ? 'selected' : '' }}>{{ $n }}</option>
+                    <option value="{{ $n }}" {{ $n === $itemsCount ? 'selected' : '' }}>{{ $n }}</option>
                 @endfor
             </select>
         </div>
@@ -154,13 +157,26 @@
                     <tr class="bg-surface-container-high border-b border-white/10">
                         <th class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant py-3 px-4 text-center w-10">Ítem</th>
                         <th class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant py-3 px-3 text-left">Descripción</th>
-                        <th class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant py-3 px-3 text-center w-16">Cant.</th>
+                        <th class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant py-3 px-3 text-center w-16">Cant/horas</th>
                         <th class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant py-3 px-3 text-right w-32">Vr. Unitario</th>
                         <th class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant py-3 px-4 text-right w-32">Vr. Bruto</th>
                     </tr>
                 </thead>
                 <tbody id="items-tabla">
                     @for($i = 1; $i <= 15; $i++)
+                    @php
+                        $it = $items[$i-1] ?? null;
+                        $descVal = $it['desc'] ?? '';
+                        $cantVal = $it['cant'] ?? '';
+                        $precioVal = $it['precio'] ?? '';
+                        $brutoVal = ($cantVal && $precioVal) ? ($cantVal * $precioVal) : 0;
+                        $brutoFormatted = $brutoVal > 0 ? '$' . number_format($brutoVal, 0, ',', '.') : '$0';
+                        $selectedProductName = '';
+                        if (isset($it) && !empty($it['producto_id']) && isset($products)) {
+                            $found = $products->firstWhere('id', $it['producto_id']);
+                            $selectedProductName = $found?->nombre ?? '';
+                        }
+                    @endphp
                     <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors item-row"
                         data-row="{{ $i }}">
                         {{-- # --}}
@@ -168,10 +184,17 @@
 
                         {{-- Descripción --}}
                         <td class="py-2 px-3">
-                            <input type="text" name="descripcion_{{ $i }}"
-                                   class="item-desc w-full bg-transparent border-b border-transparent
-                                          focus:border-white/20 text-primary text-xs outline-none py-1 transition-all"
-                                   placeholder="{{ $i === 1 ? 'Ej: Alquiler de terraza + sonido' : '' }}">
+                            <div style="display:flex;gap:.5rem;align-items:center">
+                                <input list="products-list" class="product-dropdown" data-row="{{ $i }}" placeholder="— Producto —"
+                                       style="min-width:140px;padding:.25rem;border-radius:.375rem;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.06)"
+                                       value="{{ $selectedProductName }}">
+                                <input type="text" name="descripcion_{{ $i }}"
+                                       class="item-desc w-full bg-transparent border-b border-transparent
+                                              focus:border-white/20 text-white text-xs outline-none py-1 transition-all"
+                                       placeholder="{{ $i === 1 ? 'Ej: Alquiler de terraza + sonido' : '' }}"
+                                       value="{{ $descVal }}">
+                                <input type="hidden" class="item-product-id" name="producto_id_{{ $i }}" value="{{ $it['producto_id'] ?? '' }}">
+                            </div>
                         </td>
 
                         {{-- Cantidad --}}
@@ -179,7 +202,7 @@
                             <input type="number" name="cantidad_{{ $i }}" min="0"
                                    class="item-cant w-full bg-transparent border-b border-transparent
                                           focus:border-white/20 text-white text-xs text-center outline-none py-1 transition-all"
-                                   placeholder="0" oninput="calcularFila({{ $i }})">
+                                   placeholder="0" oninput="calcularFila({{ $i }})" value="{{ $cantVal }}">
                         </td>
 
                         {{-- Vr. Unitario --}}
@@ -187,17 +210,27 @@
                             <input type="number" name="vr_unitario_{{ $i }}" min="0" step="0.01"
                                    class="item-precio w-full bg-transparent border-b border-transparent
                                           focus:border-white/20 text-white text-xs text-right outline-none py-1 transition-all"
-                                   placeholder="$0" oninput="calcularFila({{ $i }})">
+                                   placeholder="$0" oninput="calcularFila({{ $i }})" value="{{ $precioVal }}">
                         </td>
 
                         {{-- Vr. Bruto (calculado) --}}
                         <td class="py-2 px-4 text-right">
-                            <span id="bruto_{{ $i }}" class="text-white text-xs font-semibold">$0</span>
+                            <span id="bruto_{{ $i }}" class="text-white text-xs font-semibold">{{ $brutoFormatted }}</span>
                         </td>
                     </tr>
                     @endfor
                 </tbody>
             </table>
+            @if(isset($products) && $products->count() > 0)
+                <datalist id="products-list">
+                    @foreach($products as $p)
+                        <option value="{{ $p->nombre }}" data-id="{{ $p->id }}" data-price="{{ $p->precio }}"></option>
+                    @endforeach
+                </datalist>
+                <script>
+                    window.PRODUCTS_DATA = {!! isset($products) ? $products->map(fn($x)=>['id'=>$x->id,'nombre'=>$x->nombre,'precio'=>$x->precio])->toJson() : '[]' !!};
+                </script>
+            @endif
         </div>
 
         {{-- ── Totales ──────────────────────────────────────────── --}}
@@ -235,18 +268,7 @@
         {{-- ── Pago ─────────────────────────────────────────────── --}}
         <div class="grid grid-cols-1 md:grid-cols-2 border-t border-white/10">
             <div class="p-5 space-y-3 border-b md:border-b-0 md:border-r border-white/10">
-                <div class="flex items-center gap-3">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-28 shrink-0">
-                        Forma de pago:
-                    </label>
-                    <select id="forma-pago" name="forma_pago"
-                            class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
-                                   px-3 py-2 text-primary text-xs font-bold focus:outline-none focus:border-primary transition-all">
-                        <option value="contado">Contado</option>
-                        <option value="credito">Crédito</option>
-                        <option value="cuotas">Cuotas</option>
-                    </select>
-                </div>
+                @php $selectedMedio = $metodos[0]['metodo'] ?? ($factura && isset($factura->metodo) ? $factura->metodo : null); @endphp
                 <div class="flex items-center gap-3">
                     <label class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant w-28 shrink-0">
                         Medio de pago:
@@ -254,14 +276,19 @@
                     <select id="medio-pago" name="medio_pago"
                             class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
                                    px-3 py-2 text-primary text-xs font-bold focus:outline-none focus:border-primary transition-all">
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="mixto">Mixto</option>
+                        <option value="efectivo" {{ ($selectedMedio === 'efectivo' || !$selectedMedio) ? 'selected' : '' }}>Efectivo</option>
+                        <option value="transferencia" {{ ($selectedMedio === 'transferencia') ? 'selected' : '' }}>Transferencia</option>
+                        <option value="tarjeta" {{ ($selectedMedio === 'tarjeta') ? 'selected' : '' }}>Tarjeta</option>
+                        <option value="mixto" {{ ($selectedMedio === 'mixto') ? 'selected' : '' }}>Mixto</option>
                     </select>
                 </div>
             </div>
-            <div class="p-5">{{-- columna derecha vacía para simetría --}}</div>
+            <div class="p-5 flex justify-end items-center">
+                <div class="text-[12px] text-on-surface-variant">
+                    <strong class="uppercase mr-2">Medio de pago seleccionado:</strong>
+                    <span id="display-medio-pago" class="font-black text-primary">{{ strtoupper($selectedMedio ?? 'EFECTIVO') }}</span>
+                </div>
+            </div>
         </div>
 
         {{-- ── Observaciones ────────────────────────────────────── --}}
@@ -272,7 +299,7 @@
             <textarea id="observaciones" name="observaciones" rows="2"
                       class="w-full bg-surface-container-highest border border-white/10 rounded-xl
                              px-4 py-3 text-white text-sm focus:outline-none focus:border-primary transition-all resize-none"
-                      placeholder="Observaciones del evento..."></textarea>
+                      placeholder="Observaciones del evento...">{{ $factura->observaciones ?? '' }}</textarea>
         </div>
 
         {{-- ── Orden de compra ──────────────────────────────────── --}}
@@ -284,7 +311,7 @@
                 <input type="text" id="orden-compra" name="orden_compra"
                        class="flex-1 bg-surface-container-highest border border-white/10 rounded-lg
                               px-3 py-2 text-white text-sm focus:outline-none focus:border-primary transition-all"
-                       placeholder="">
+                       placeholder="" value="{{ $factura->orden_compra ?? '' }}">
             </div>
         </div>
 
@@ -295,11 +322,19 @@
                            hover:bg-white/5 hover:text-white transition-all text-xs font-black uppercase tracking-widest">
                 <span class="material-symbols-outlined text-base">delete_sweep</span> Limpiar
             </button>
-            <button type="button" onclick="guardarFactura()"
-                    class="flex items-center gap-2 px-5 py-3 rounded-xl bg-surface-container-highest border border-white/10
-                           text-white hover:bg-primary hover:text-on-primary transition-all text-xs font-black uppercase tracking-widest">
-                <span class="material-symbols-outlined text-base">save</span> Guardar
-            </button>
+            @if(isset($factura) && $factura)
+                <button type="button" id="btn-editar" onclick="guardarFactura()"
+                        class="flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-600 border border-amber-700
+                               text-white hover:bg-amber-500 hover:text-on-primary transition-all text-xs font-black uppercase tracking-widest">
+                    <span class="material-symbols-outlined text-base">edit</span> Editar
+                </button>
+            @else
+                <button type="button" id="btn-guardar" onclick="guardarFactura()"
+                        class="flex items-center gap-2 px-5 py-3 rounded-xl bg-surface-container-highest border border-white/10
+                               text-white hover:bg-primary hover:text-on-primary transition-all text-xs font-black uppercase tracking-widest">
+                    <span class="material-symbols-outlined text-base">save</span> Guardar
+                </button>
+            @endif
             <button type="button" onclick="imprimirFactura()"
                     class="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container
                            text-on-primary-container font-black uppercase tracking-widest text-xs
@@ -313,3 +348,13 @@
 </div>{{-- /page --}}
 @endsection
 
+{{-- JS dedicado a esta vista --}}
+@push('scripts')
+    <script src="{{ asset('js/alquiler.js') }}"></script>
+    @if(isset($factura) && $factura)
+        <script>
+            window.ALQUILER_EDITING = true;
+            window.ALQUILER_FACTURA_ID = '{{ $factura->id }}';
+        </script>
+    @endif
+@endpush

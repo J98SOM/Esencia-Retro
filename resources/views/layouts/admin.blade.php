@@ -97,6 +97,10 @@
             body.sidebar-collapsed .nav-link { justify-content: flex-start; padding-left: 1rem; padding-right: 1rem; }
         }
     </style>
+    <script>
+        window.VITE_API_URL = '/api';
+        window.API_BASE = '/api';
+    </script>
     @stack('styles')
 </head>
 <body class="flex min-h-screen selection:bg-primary/30 selection:text-primary">
@@ -137,33 +141,29 @@
     <!-- Global Modals Container -->
     <div id="modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center opacity-0 transition-opacity duration-300">
         <!-- New Order Modal -->
+        @php
+            $freeMesas = \App\Models\Mesa::whereDoesntHave('facturas', function($query) {
+                $query->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(estatus)'), ['pagado', 'pagada']);
+            })->orderBy('nombre')->get();
+        @endphp
         <div id="modal-new-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
             <h3 class="text-2xl font-black text-white mb-2">Nueva Orden</h3>
             <p class="text-sm text-on-surface-variant mb-6">Selecciona una mesa libre para abrir una nueva orden rápida.</p>
             
-            <div class="space-y-3 mb-6 max-h-64 overflow-y-auto pr-2">
-                <a href="{{ route('admin.pedido', ['id' => 2]) }}" class="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-surface hover:bg-surface-container-highest hover:border-primary/50 transition-all group">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                            <span class="material-symbols-outlined">restaurant</span>
+            <div class="space-y-3 mb-6 max-h-64 overflow-y-auto pr-2" id="mesas-list-container">
+                @foreach($freeMesas as $m)
+                    <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex items-center justify-between p-4 rounded-xl border border-white/5 transition-all bg-surface hover:bg-surface-container-highest hover:border-primary/50 group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <span class="material-symbols-outlined">restaurant</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-white group-hover:text-primary transition-colors">{{ $m->nombre }}</p>
+                                <p class="text-[10px] text-slate-500 uppercase tracking-widest">Capacidad: {{ $m->capacidad }} pax</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-white group-hover:text-primary transition-colors">Mesa 02</p>
-                            <p class="text-[10px] text-slate-500 uppercase tracking-widest">Ventana</p>
-                        </div>
-                    </div>
-                </a>
-                <a href="{{ route('admin.pedido', ['id' => 5]) }}" class="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-surface hover:bg-surface-container-highest hover:border-primary/50 transition-all group">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                            <span class="material-symbols-outlined">liquor</span>
-                        </div>
-                        <div>
-                            <p class="font-bold text-white group-hover:text-primary transition-colors">Barra 05</p>
-                            <p class="text-[10px] text-slate-500 uppercase tracking-widest">Principal</p>
-                        </div>
-                    </div>
-                </a>
+                    </a>
+                @endforeach
             </div>
             
             <div class="flex gap-3 pt-4 border-t border-white/10">
@@ -178,8 +178,8 @@
                     <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiWenezqJGbD-1rlSh8Is3huor8fZxWZLXx3y1f9a9228ZWoq_mtHho3gXIPj4ssTtBWFIbYpYNH3Dd1P6GFV8jKd3ieKk7oWUP1EZauBfRGLv2b75v0aqlS4tkgPga-ISdrxYZ5PKQQgqkNq6Rkwzj6xARv3r09m8_tcR0OlRG4dnve3aGcpcepAINAsNgglD61KbQ_SYlkfogXTf4LEBGo_caiaVksVMNHv1ar1HblEJlraXJhRw-tq9Jp-T4lPGhucnStjGiYY4" alt="Operator"/>
                 </div>
                 <div>
-                    <p class="font-bold text-white text-lg">System Operator</p>
-                    <p class="text-[10px] uppercase font-bold text-primary tracking-widest">Administrador</p>
+                    <p class="font-bold text-white text-lg">{{ auth()->user()->name ?? 'Usuario' }}</p>
+                    <p class="text-[10px] uppercase font-bold text-primary tracking-widest">{{ ucfirst(optional(auth()->user()->rol)->name ?? 'Rol') }}</p>
                 </div>
             </div>
             <div class="space-y-2 mb-6">
@@ -192,12 +192,60 @@
                     <span class="font-medium text-sm">Notificaciones</span>
                 </a>
             </div>
-            <a href="{{ route('login') }}" class="w-full py-3 rounded-xl bg-error/10 text-error hover:bg-error hover:text-on-error transition-colors flex items-center justify-center gap-2 font-bold text-sm">
+            <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="w-full py-3 rounded-xl bg-error/10 text-error hover:bg-error hover:text-on-error transition-colors flex items-center justify-center gap-2 font-bold text-sm">
                 <span class="material-symbols-outlined text-sm">logout</span>
                 Cerrar Sesión
             </a>
         </div>
-        
+           @php
+            $allProducts = \App\Models\Producto::orderBy('nombre')->get();
+        @endphp
+        <!-- Añadir Producto a la orden Modal (global) -->
+        <div id="modal-add-product-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-5xl shadow-2xl transform scale-95 transition-transform duration-300 sm:mx-3 sm:my-4 sm:rounded-xl sm:h-[calc(100vh-4rem)] sm:overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-white">Menú de Productos</h3>
+                <div class="flex gap-4 items-center">
+                    <input type="text" id="productos-search-input" class="bg-surface-container-highest border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-all w-48" placeholder="Buscar producto...">
+                    <button onclick="closeModals()" class="text-outline hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <form id="add-products-form" method="POST" action="">
+                @csrf
+                <input type="hidden" name="cantidad" value="1">
+                <div id="productos-grid" class="grid gap-6 max-h-[60vh] overflow-y-auto pr-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
+                    @foreach($allProducts as $p)
+                        <div class="product-card group relative overflow-hidden rounded-xl bg-surface-container-low p-5 md:p-6 transition-all hover:bg-surface-container-high cursor-pointer flex flex-col md:flex-row items-start gap-4" data-name="{{ strtolower($p->nombre) }}">
+                            <div class="w-full md:w-28 h-36 md:h-28 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center flex-shrink-0">
+                                <img src="{{ $p->imagen_url ?? '' }}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
+                            </div>
+                            <div class="flex-1 min-w-0 flex flex-col justify-between relative">
+                                <div>
+                                    <p class="font-bold text-white text-base md:text-lg whitespace-nowrap overflow-visible">{{ $p->nombre }}</p>
+                                    <p class="text-sm md:text-base text-primary font-bold mt-1">${{ number_format($p->precio, 2) }}</p>
+                                </div>
+                                <div class="mt-4 flex items-center gap-3">
+                                    <label class="text-xs text-slate-500 font-bold">CANTIDAD:</label>
+                                    <select name="products[{{ $p->id }}]" class="rounded bg-surface-container-highest border border-white/10 text-white text-sm p-1">
+                                        <option value="0" selected>0</option>
+                                        @for($i=1; $i<=20; $i++)
+                                            <option value="{{ $i }}">{{ $i }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-6 flex justify-end gap-3 border-t border-white/5 pt-4">
+                    <button type="submit" class="py-3 px-6 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20">Agregar al Pedido</button>
+                    <button type="button" onclick="closeModals()" class="py-3 px-6 rounded-xl border border-white/10">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
         @stack('modals')
 
     </div>
@@ -223,7 +271,10 @@
             }
         });
 
-        function openModal(modalId) {
+        // expose toggles on window for inline onclick handlers
+        try { window.toggleSidebar = toggleSidebar; window.toggleMobileMenu = toggleMobileMenu; } catch(e){}
+
+        window.openModal = function(modalId) {
             // Cierra todos primero
             document.querySelectorAll('.modal-content').forEach(m => {
                 m.classList.add('hidden');
@@ -240,6 +291,16 @@
                 modalOverlay.classList.remove('opacity-0');
                 modalOverlay.classList.add('opacity-100');
                 const target = document.getElementById(modalId);
+                // If opening product menu modal, configure form action dynamically
+                if (modalId === 'modal-add-product-order') {
+                    const form = document.getElementById('add-products-form');
+                    const parts = window.location.pathname.split('/');
+                    const idx = parts.indexOf('mesas');
+                    const mesaId = (idx !== -1 && parts[idx + 1]) ? parts[idx + 1] : (sessionStorage.getItem('selected_mesa_id') || '0');
+                    if (form) {
+                        form.action = '/admin/mesas/' + mesaId + '/pedido/add';
+                    }
+                }
                 target.classList.remove('hidden');
                 setTimeout(() => {
                     target.classList.remove('scale-95');
@@ -248,7 +309,29 @@
             });
         }
 
-        function closeModals() {
+        // Live search filter for Blade-rendered products inside the modal
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('productos-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase().trim();
+                    document.querySelectorAll('#productos-grid .product-card').forEach(card => {
+                        const name = card.getAttribute('data-name') || '';
+                        if (name.includes(query)) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
+
+        // API-related functions removed. Carga directa por base de datos en Blade.
+
+        function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+
+        window.closeModals = function closeModals() {
             modalOverlay.classList.remove('opacity-100');
             modalOverlay.classList.add('opacity-0');
             document.querySelectorAll('.modal-content').forEach(m => {
@@ -268,5 +351,7 @@
             if (e.target === modalOverlay) closeModals();
         });
     </script>
+    <!-- Removed redundant client-side API/roles scripts -->
+    @stack('scripts')
 </body>
 </html>

@@ -1,2 +1,4 @@
 import './bootstrap';
-import './alquiler.js';
+import AuthService from './auth';
+
+AuthService.initAuth().catch(() => {});

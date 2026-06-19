@@ -115,7 +115,7 @@
             <div class="flex items-center gap-3">
                 <img src="{{ asset('img/icon.png') }}" class="w-8 h-8 mix-blend-screen" alt="App Icon">
                 <div class="flex flex-col">
-                    <span class="text-xs font-black text-primary uppercase tracking-[0.2em] mb-0.5">Esencia Retro • Terminal 01</span>
+                    <span class="text-xs font-black text-primary uppercase tracking-[0.2em] mb-0.5">Esencia Retro • Orden #{{ $factura->numero_orden ?? 'Pendiente' }}</span>
                     <span class="text-sm font-semibold text-white/90">Volver a Pedido</span>
                 </div>
             </div>
@@ -123,7 +123,7 @@
         <div class="flex items-center gap-6">
             <div class="text-right">
                 <p class="text-[10px] text-on-surface-variant uppercase font-black tracking-widest mb-0.5">Cajero en Turno</p>
-                <p class="text-base font-bold text-white">Alex S.</p>
+                <p class="text-base font-bold text-white">{{ auth()->user()->name ?? 'Cajero' }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <div class="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -137,189 +137,355 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-[1600px] mx-auto w-full px-6 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <!-- Column 1: Order Summary -->
-            <section class="lg:col-span-3 glass-card rounded-2xl p-6 shadow-2xl flex flex-col">
-                <div class="mb-6 flex justify-between items-start">
-                    <div>
-                        <h2 class="text-xl font-black text-white mb-1 tracking-tight">Resumen</h2>
-                        <p class="text-slate-500 text-sm font-medium">Mesa {{ $mesaId ?? '12' }} • #4582</p>
-                    </div>
-                    <span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">Pendiente</span>
+    <main class="flex-1 max-w-[1200px] mx-auto w-full px-6 py-8 flex flex-col gap-8">
+        
+        <!-- Payment Section (Top) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Payment Inputs -->
+            <section class="glass-card rounded-2xl p-8 shadow-xl flex flex-col gap-6">
+                <div>
+                    <h2 class="text-xl font-black text-white mb-1 tracking-tight">Método de Pago</h2>
+                    <p class="text-slate-500 text-sm font-medium">Ingresa el monto recibido por cada método</p>
                 </div>
                 
-                <div class="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar mb-6">
-                    <div class="flex justify-between items-start pb-4 border-b border-white/5">
-                        <div>
-                            <h3 class="text-white font-semibold text-sm">Cerveza Artesanal</h3>
-                            <p class="text-slate-500 text-[10px] mt-1 uppercase font-bold tracking-wider">1 x $5.99</p>
+                <div class="space-y-4">
+                    <!-- Efectivo -->
+                    <div class="flex items-center gap-4 bg-surface-container-highest/50 p-4 rounded-xl border border-white/5 focus-within:border-primary/50 transition-all">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
+                            <span class="material-symbols-outlined text-white text-2xl">payments</span>
                         </div>
-                        <span class="text-white font-bold text-sm">$5.99</span>
-                    </div>
-                    <div class="flex justify-between items-start pb-4 border-b border-white/5">
-                        <div>
-                            <h3 class="text-white font-semibold text-sm">Hamburguesa Premium</h3>
-                            <p class="text-slate-500 text-[10px] mt-1 uppercase font-bold tracking-wider">1 x $12.99</p>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1">Efectivo</label>
+                            <div class="relative flex items-center">
+                                <span class="text-white font-bold mr-2">$</span>
+                                <input id="input-efectivo" type="text" inputmode="numeric" class="w-full bg-transparent text-xl font-black text-white border-none outline-none focus:ring-0 p-0 payment-input" placeholder="0.00" value="">
+                            </div>
                         </div>
-                        <span class="text-white font-bold text-sm">$12.99</span>
                     </div>
-                </div>
 
-                <div class="space-y-3 bg-surface-container-lowest/50 p-5 rounded-xl border border-white/5">
-                    <div class="flex justify-between text-sm text-slate-400 font-medium">
-                        <span>Subtotal</span>
-                        <span class="text-white">$18.98</span>
+                    <!-- Tarjeta -->
+                    <div class="flex items-center gap-4 bg-surface-container-highest/50 p-4 rounded-xl border border-white/5 focus-within:border-blue-400/50 transition-all">
+                        <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
+                            <span class="material-symbols-outlined text-blue-400 text-2xl">credit_card</span>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1">Tarjeta</label>
+                            <div class="relative flex items-center">
+                                <span class="text-white font-bold mr-2">$</span>
+                                <input id="input-tarjeta" type="text" inputmode="numeric" class="w-full bg-transparent text-xl font-black text-white border-none outline-none focus:ring-0 p-0 payment-input" placeholder="0.00" value="">
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-sm text-slate-400 font-medium">
-                        <span>Servicio (10%)</span>
-                        <span class="text-white">$1.90</span>
-                    </div>
-                </div>
 
-                <div class="mt-4 grid grid-cols-2 gap-3">
-                    <button class="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-container-highest border border-white/5 text-white text-xs font-black uppercase tracking-widest hover:bg-surface-container-high transition-all">
-                        <span class="material-symbols-outlined text-lg">print</span> Ticket
-                    </button>
-                    <button class="py-3 rounded-xl bg-surface-container-highest border border-white/5 text-white text-xs font-black uppercase tracking-widest hover:bg-surface-container-high transition-all">
-                        Dividir
-                    </button>
-                </div>
-            </section>
-
-            <!-- Column 2: Payment Methods & Shortcuts -->
-            <section class="lg:col-span-5 flex flex-col gap-8">
-                <div class="glass-card rounded-2xl p-8 shadow-xl">
-                    <div class="mb-6">
-                        <h2 class="text-xl font-black text-white mb-1 tracking-tight">Método de Pago</h2>
-                        <p class="text-slate-500 text-sm font-medium">Selecciona una opción de cobro</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button class="primary-gradient rounded-2xl p-6 flex flex-col items-center justify-center gap-3 ring-2 ring-primary ring-offset-4 ring-offset-[#111111] transition-all transform hover:scale-[1.02]">
-                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-inner">
-                                <span class="material-symbols-outlined text-white text-2xl">payments</span>
+                    <!-- QR / Transferencia -->
+                    <div class="flex items-center gap-4 bg-surface-container-highest/50 p-4 rounded-xl border border-white/5 focus-within:border-purple-400/50 transition-all">
+                        <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
+                            <span class="material-symbols-outlined text-purple-400 text-2xl">qr_code_scanner</span>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest block mb-1">QR / Transferencia</label>
+                            <div class="relative flex items-center">
+                                <span class="text-white font-bold mr-2">$</span>
+                                <input id="input-qr" type="text" inputmode="numeric" class="w-full bg-transparent text-xl font-black text-white border-none outline-none focus:ring-0 p-0 payment-input" placeholder="0.00" value="">
                             </div>
-                            <span class="text-white font-black text-xs uppercase tracking-widest">Efectivo</span>
-                        </button>
-                        <button class="bg-surface-container-highest/50 border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 transition-all transform hover:scale-[1.02]">
-                            <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                <span class="material-symbols-outlined text-blue-400 text-2xl">credit_card</span>
-                            </div>
-                            <span class="text-slate-300 font-black text-xs uppercase tracking-widest">Tarjeta</span>
-                        </button>
-                        <button class="bg-surface-container-highest/50 border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 transition-all transform hover:scale-[1.02]">
-                            <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                                <span class="material-symbols-outlined text-purple-400 text-2xl">smartphone</span>
-                            </div>
-                            <span class="text-slate-300 font-black text-xs uppercase tracking-widest">Transferencia</span>
-                        </button>
-                        <button class="bg-surface-container-highest/50 border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/5 transition-all transform hover:scale-[1.02]">
-                            <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                                <span class="material-symbols-outlined text-orange-400 text-2xl">account_balance_wallet</span>
-                            </div>
-                            <span class="text-slate-300 font-black text-xs uppercase tracking-widest">Mixto</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="glass-card rounded-2xl p-8 shadow-xl flex-1 flex flex-col">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-black text-white uppercase tracking-[0.15em]">Atajos de Efectivo</h3>
-                        <p class="text-slate-500 text-xs mt-1">Montos rápidos sugeridos</p>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4">
-                        <button class="py-5 bg-white/5 border border-white/10 rounded-xl font-black text-2xl text-primary hover:bg-primary hover:text-on-primary transition-all transform active:scale-95">$50</button>
-                        <button class="py-5 bg-white/5 border border-white/10 rounded-xl font-black text-2xl text-primary hover:bg-primary hover:text-on-primary transition-all transform active:scale-95">$100</button>
-                        <button class="py-5 bg-white/5 border border-white/10 rounded-xl font-black text-2xl text-primary hover:bg-primary hover:text-on-primary transition-all transform active:scale-95">$200</button>
-                    </div>
-                    <div class="mt-auto pt-8">
-                        <a href="{{ route('admin.mesas') }}" class="w-full flex items-center justify-center primary-gradient text-on-primary py-6 rounded-2xl font-black text-lg tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 active:translate-y-0.5 transition-all uppercase">
-                            FINALIZAR PAGO
-                        </a>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Column 3: Calculator + Payment Summary (Combined) -->
-            <section class="lg:col-span-4 flex flex-col gap-6">
-                <!-- Payment Summary Card (Total, Received, Change - All Together) -->
-                <div class="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                    <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 blur-3xl rounded-full"></div>
-                    <div class="relative z-10">
-                        <!-- Total -->
-                        <div class="flex justify-between items-center pb-4 border-b border-white/10">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-primary text-xl">receipt_long</span>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total a Pagar</p>
-                                    <p class="text-xs text-slate-500">USD</p>
-                                </div>
+            <!-- Summary -->
+            <section class="glass-card rounded-2xl p-8 shadow-xl relative overflow-hidden flex flex-col justify-between">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 blur-3xl rounded-full"></div>
+                <div class="relative z-10 space-y-2">
+                    <!-- Total -->
+                    <div class="flex justify-between items-center pb-4 border-b border-white/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary text-xl">receipt_long</span>
                             </div>
-                            <span class="text-3xl font-black text-white tracking-tighter">$20.88</span>
+                            <div>
+                                <p class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total a Pagar</p>
+                                <p class="text-xs text-slate-500">Mesa {{ $mesaId }}</p>
+                            </div>
                         </div>
+                        <span id="total-to-pay-el" class="text-3xl font-black text-white tracking-tighter" data-total="{{ $total }}">${{ number_format($total, 0, ',', '.') }}</span>
+                    </div>
+                    
+                    <!-- Monto Recibido -->
+                    <div class="flex justify-between items-center py-4 border-b border-white/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-emerald-400 text-xl">payments</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Monto Recibido</p>
+                                <p class="text-xs text-slate-500">Total Ingresado</p>
+                            </div>
+                        </div>
+                        <span id="received-amount-el" class="text-3xl font-black text-emerald-400 tracking-tighter">$0</span>
+                    </div>
+
+                    <!-- Cambio -->
+                    <div class="flex justify-between items-center pt-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary text-xl">currency_exchange</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-primary uppercase tracking-widest">Cambio a Entregar</p>
+                                <p class="text-xs text-slate-500">Efectivo</p>
+                            </div>
+                        </div>
+                        <span id="change-amount-el" class="text-4xl font-black text-primary tracking-tighter">$0</span>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-4">
+                    <form id="checkout-form" action="{{ route('admin.checkout.pay', ['id' => $mesaId]) }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="monto_efectivo" id="hidden-efectivo" value="0">
+                        <input type="hidden" name="monto_tarjeta" id="hidden-tarjeta" value="0">
+                        <input type="hidden" name="monto_qr" id="hidden-qr" value="0">
                         
-                        <!-- Monto Recibido -->
-                        <div class="flex justify-between items-center py-4 border-b border-white/10">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-emerald-400 text-xl">payments</span>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Monto Recibido</p>
-                                    <p class="text-xs text-slate-500">Efectivo</p>
-                                </div>
-                            </div>
-                            <span class="text-3xl font-black text-emerald-400 tracking-tighter">$100.00</span>
-                        </div>
-
-                        <!-- Cambio -->
-                        <div class="flex justify-between items-center pt-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-primary text-xl">currency_exchange</span>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-black text-primary uppercase tracking-widest">Cambio a Entregar</p>
-                                    <p class="text-xs text-slate-500">USD</p>
-                                </div>
-                            </div>
-                            <span class="text-4xl font-black text-primary tracking-tighter">$79.12</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Calculator -->
-                <div class="glass-card rounded-2xl p-6 shadow-xl flex flex-col gap-5 flex-1">
-                    <div>
-                        <h2 class="text-lg font-black text-white mb-1 tracking-tight">Calculadora</h2>
-                        <p class="text-slate-500 text-xs font-medium">Ingresa el monto recibido</p>
-                    </div>
-                    <div class="relative group">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-primary group-focus-within:scale-110 transition-transform">$</span>
-                        <input class="w-full bg-surface-container-lowest border-2 border-primary/20 focus:border-primary rounded-2xl py-6 pl-14 pr-6 text-4xl font-black text-white ring-0 outline-none transition-all text-right shadow-inner" placeholder="0.00" type="text" value="100.00"/>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 flex-1">
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">1</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">2</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">3</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">4</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">5</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">6</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">7</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">8</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">9</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">.</button>
-                        <button class="keypad-btn py-4 rounded-xl text-2xl font-black text-white">0</button>
-                        <button class="keypad-btn py-4 rounded-xl text-white flex items-center justify-center hover:bg-error/20 hover:text-error hover:border-error/30 transition-all">
-                            <span class="material-symbols-outlined text-2xl">backspace</span>
+                        <button type="submit" class="w-full flex items-center justify-center primary-gradient text-on-primary py-5 rounded-2xl font-black text-lg tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 active:translate-y-0.5 transition-all uppercase">
+                            FINALIZAR PAGO
                         </button>
-                    </div>
+                    </form>
                 </div>
             </section>
         </div>
+
+        <!-- Order Items Table (Bottom) -->
+        <section class="glass-card rounded-2xl p-8 shadow-xl">
+            <h2 class="text-xl font-black text-white mb-6 tracking-tight">Productos Asignados a la Mesa</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-slate-400 text-xs uppercase tracking-widest">
+                            <th class="py-3 font-medium">Producto</th>
+                            <th class="py-3 font-medium text-center">Cantidad</th>
+                            <th class="py-3 font-medium text-right">Precio Unit.</th>
+                            <th class="py-3 font-medium text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        @foreach($items as $item)
+                            @php
+                                $prod = $item->producto;
+                                $precioTotal = $item->cantidad * $item->precio_unitario;
+                            @endphp
+                            <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <td class="py-4 font-bold text-white flex items-center gap-3">
+                                    @if($prod && $prod->imagen_url)
+                                        <div class="w-10 h-10 rounded-md bg-surface-container-highest overflow-hidden">
+                                            <img src="{{ $prod->imagen_url }}" class="w-full h-full object-cover">
+                                        </div>
+                                    @endif
+                                    {{ $prod->nombre ?? $item->descripcion }}
+                                </td>
+                                <td class="py-4 text-center text-slate-300 font-medium">{{ intval($item->cantidad) }}</td>
+                                <td class="py-4 text-right text-slate-300">${{ number_format($item->precio_unitario, 0, ',', '.') }}</td>
+                                <td class="py-4 text-right font-bold text-white">${{ number_format($precioTotal, 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr class="text-sm">
+                            <td colspan="3" class="py-4 text-right text-slate-400 font-medium">Subtotal</td>
+                            <td class="py-4 text-right font-bold text-white">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const total = parseFloat(document.getElementById('total-to-pay-el').dataset.total);
+            const inputEfectivo = document.getElementById('input-efectivo');
+            const inputTarjeta = document.getElementById('input-tarjeta');
+            const inputQr = document.getElementById('input-qr');
+            
+            const hiddenEfectivo = document.getElementById('hidden-efectivo');
+            const hiddenTarjeta = document.getElementById('hidden-tarjeta');
+            const hiddenQr = document.getElementById('hidden-qr');
+
+            const receivedEl = document.getElementById('received-amount-el');
+            const changeEl = document.getElementById('change-amount-el');
+
+            function parseAmount(val) {
+                if (!val) return 0;
+                // Para evitar que "300.000" se convierta en 300, quitamos los puntos y comas.
+                // En Colombia no se usan decimales en la caja, así que "300.000" es "300000".
+                let clean = String(val).replace(/[.,]/g, '');
+                return parseFloat(clean) || 0;
+            }
+
+            function updateChange() {
+                const valEfectivo = parseAmount(inputEfectivo.value);
+                const valTarjeta = parseAmount(inputTarjeta.value);
+                const valQr = parseAmount(inputQr.value);
+                
+                const received = valEfectivo + valTarjeta + valQr;
+                receivedEl.textContent = '$' + new Intl.NumberFormat('es-CO').format(received);
+                
+                // Change is normally only given from cash, but for simplicity here we compute overall change
+                const change = Math.max(0, received - total);
+                changeEl.textContent = '$' + new Intl.NumberFormat('es-CO').format(change);
+                
+                // Update hidden inputs
+                hiddenEfectivo.value = valEfectivo;
+                hiddenTarjeta.value = valTarjeta;
+                hiddenQr.value = valQr;
+            }
+
+            function formatNumberInput(e) {
+                let raw = String(e.target.value).replace(/[^\d]/g, '');
+                if (raw === '') {
+                    e.target.value = '';
+                    return;
+                }
+                e.target.value = new Intl.NumberFormat('es-CO').format(parseInt(raw, 10));
+            }
+
+            [inputEfectivo, inputTarjeta, inputQr].forEach(input => {
+                input.addEventListener('input', (e) => {
+                    formatNumberInput(e);
+                    updateChange();
+                });
+            });
+
+            const checkoutForm = document.getElementById('checkout-form');
+            if (checkoutForm) {
+                const items = @json($items->map(fn($item) => ['cantidad' => intval($item->cantidad), 'nombre' => $item->producto->nombre ?? $item->descripcion, 'total' => $item->cantidad * $item->precio_unitario]));
+                const orderNumber = '{{ $factura->numero_orden ?? str_pad($factura->id, 4, "0", STR_PAD_LEFT) }}';
+                const mesaNombre = '{{ $mesa->nombre ?? "POS" }}';
+                
+                @php
+                    $logoPath = public_path('img/logo.png');
+                    $logoBase64 = '';
+                    if (file_exists($logoPath)) {
+                        $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
+                @endphp
+                const logoSrc = '{!! $logoBase64 !!}';
+
+                checkoutForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const valEfectivo = parseAmount(inputEfectivo.value);
+                    const valTarjeta = parseAmount(inputTarjeta.value);
+                    const valQr = parseAmount(inputQr.value);
+                    const received = valEfectivo + valTarjeta + valQr;
+                    
+                    if (received < total) {
+                        alert('El monto recibido es menor al total a pagar.');
+                        return;
+                    }
+
+                    if(confirm('¿Desea imprimir el ticket de la factura cobrada?')) {
+                        const printWindow = window.open('', '_blank', 'width=400,height=600');
+                        
+                        let itemsHtml = '';
+                        items.forEach(item => {
+                            itemsHtml += `
+                                <tr>
+                                    <td class="col-qty">${item.cantidad}</td>
+                                    <td class="col-desc">${item.nombre}</td>
+                                    <td class="col-total">$${new Intl.NumberFormat('es-CO').format(item.total)}</td>
+                                </tr>
+                            `;
+                        });
+
+                        let pagosHtml = '';
+                        if (valEfectivo > 0) pagosHtml += `<tr><td class="text-left uppercase">EFECTIVO</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(valEfectivo)}</td></tr>`;
+                        if (valTarjeta > 0) pagosHtml += `<tr><td class="text-left uppercase">TARJETA</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(valTarjeta)}</td></tr>`;
+                        if (valQr > 0) pagosHtml += `<tr><td class="text-left uppercase">QR / TRANSF</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(valQr)}</td></tr>`;
+
+                        let cambioHtml = '';
+                        const change = Math.max(0, received - total);
+                        if (change > 0) {
+                            cambioHtml = `<tr><td class="text-left uppercase font-bold mt-2">CAMBIO</td><td class="text-right font-bold mt-2">$${new Intl.NumberFormat('es-CO').format(change)}</td></tr>`;
+                        }
+
+                        const dateStr = new Date().toLocaleString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+                        const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #${orderNumber}</title>
+    <style>
+        @page { margin: 0; padding: 0; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; margin: 0 auto; padding: 10px; width: 300px; }
+        .text-center { text-align: center; } .text-right { text-align: right; } .text-left { text-align: left; }
+        .font-bold { font-weight: bold; } .uppercase { text-transform: uppercase; }
+        .mb-1 { margin-bottom: 5px; } .mb-2 { margin-bottom: 10px; } .mt-2 { margin-top: 10px; }
+        .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
+        .logo { width: 180px; margin: 0 auto -15px; display: block; filter: grayscale(100%); }
+        table { width: 100%; border-collapse: collapse; }
+        table th, table td { padding: 2px 0; vertical-align: top; }
+        .col-qty { width: 15%; } .col-desc { width: 55%; } .col-total { width: 30%; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="text-center mb-2">
+        <img src="${logoSrc}" class="logo" alt="Logo">
+        <div class="font-bold uppercase">ESENCIA RETRO</div>
+        <div>NIT: 1,007,450,540</div>
+        <div>Tel: 3162218491 - 3209180085</div>
+        <div>Ciudad Bogotá</div>
+        <div>Correo: esenciaretro10@gmail.com</div>
+    </div>
+    <div class="divider"></div>
+    <div class="mb-2">
+        <div><span class="font-bold">Ticket:</span> #${orderNumber}</div>
+        <div><span class="font-bold">Fecha:</span> ${dateStr}</div>
+        <div><span class="font-bold">Mesa:</span> ${mesaNombre}</div>
+    </div>
+    <div class="divider"></div>
+    <table class="mb-2">
+        <thead>
+            <tr><th class="text-left col-qty">Cant</th><th class="text-left col-desc">Producto</th><th class="text-right col-total">Total</th></tr>
+        </thead>
+        <tbody>
+            ${itemsHtml}
+        </tbody>
+    </table>
+    <div class="divider"></div>
+    <table class="mb-2 font-bold">
+        <tr><td class="text-left uppercase">Total a Pagar</td><td class="text-right">$${new Intl.NumberFormat('es-CO').format(total)}</td></tr>
+    </table>
+    <div class="divider"></div>
+    <table class="mb-2">
+        ${pagosHtml}
+        ${cambioHtml}
+    </table>
+    <div class="divider"></div>
+    <div class="text-center mt-2">
+        <div class="font-bold uppercase mb-1">¡Gracias por su visita!</div>
+        <div>Vuelva pronto</div>
+    </div>
+    <script>
+        window.onload = function() { window.print(); }
+        window.onafterprint = function() { window.close(); }
+    <\/script>
+</body>
+</html>`;
+                        printWindow.document.open();
+                        printWindow.document.write(html);
+                        printWindow.document.close();
+
+                        this.submit();
+                    } else {
+                        this.submit();
+                    }
+                });
+            }
+        });
+    </script>
 
     <!-- Decorative Background Elements -->
     <div class="fixed top-[-10%] right-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] -z-10"></div>

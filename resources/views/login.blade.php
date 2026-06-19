@@ -89,6 +89,10 @@
             50% { box-shadow: 0 0 40px rgba(234, 188, 78, 0.2); }
         }
     </style>
+    <script>
+        window.VITE_API_URL = '/api';
+        window.API_BASE = '/api';
+    </script>
 </head>
 <body class="min-h-screen flex items-center justify-center overflow-hidden selection:bg-primary/30 selection:text-primary">
     <main class="flex w-full h-screen">
@@ -164,8 +168,10 @@
                     <p class="text-on-surface-variant">Por favor, ingresa tus credenciales para continuar.</p>
                 </div>
 
-                <form method="GET" action="{{ route('admin.dashboard') }}" class="space-y-6">
-                    <!-- Role Selection -->
+                <form id="login-form" method="POST" action="{{ route('login.post') }}" class="space-y-6" novalidate>
+                    @csrf
+
+                    <!-- Role Selection (Optional decorative selection, fallback role handled in controller) -->
                     <div class="space-y-3">
                         <label class="text-sm font-semibold uppercase tracking-widest text-on-surface-variant px-1">Rol de Acceso</label>
                         <div class="grid grid-cols-3 gap-3">
@@ -192,12 +198,12 @@
                         </div>
                     </div>
 
-                    <!-- Username -->
+                    <!-- Email -->
                     <div class="space-y-2">
-                        <label for="username" class="text-sm font-semibold text-on-surface-variant px-1">Usuario</label>
+                        <label for="email" class="text-sm font-semibold text-on-surface-variant px-1">Email</label>
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">person</span>
-                            <input type="text" id="username" placeholder="Ingrese su usuario" class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
+                            <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder="usuario@ejemplo.com" required class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
                         </div>
                     </div>
 
@@ -209,13 +215,18 @@
                         </div>
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
-                            <input type="password" id="password" placeholder="••••••••" class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
+                            <input type="password" id="password" name="password" placeholder="••••••••" class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
                         </div>
                     </div>
 
                     <!-- CTA Button -->
-                    <button type="submit" class="w-full py-4 rounded-xl primary-gradient text-on-primary font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
-                        <span>Ingresar al Sistema</span>
+                    @if ($errors->any())
+                        <div id="login-error" class="text-sm text-red-400">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
+                    <button id="login-submit" type="submit" class="w-full py-4 rounded-xl primary-gradient text-on-primary font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                        <span id="login-submit-label">Ingresar al Sistema</span>
                         <span class="material-symbols-outlined">arrow_forward</span>
                     </button>
                 </form>
@@ -238,5 +249,10 @@
             <rect width="100%" height="100%" filter="url(#noise)"/>
         </svg>
     </div>
+
+    @vite(['resources/js/app.js'])
+    <script>
+        // JS Client-side authentication hooks removed as we rely entirely on Laravel session state.
+    </script>
 </body>
 </html>
