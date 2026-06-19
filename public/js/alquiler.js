@@ -181,6 +181,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }catch(e){}
         }
+        // Disable all inputs, textareas, selects to make them read-only
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            el.readOnly = true;
+            if (el.tagName === 'SELECT') {
+                el.disabled = true;
+            }
+            el.style.pointerEvents = 'none';
+            el.classList.add('readonly-input');
+        });
         // hide save/clear buttons
         document.querySelectorAll('button[onclick="limpiarFormulario()"], button[onclick="guardarFactura()"]').forEach(b=>{ b.style.display = 'none'; });
         // recalc totals

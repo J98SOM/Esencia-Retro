@@ -63,11 +63,11 @@
         <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group border border-error/5">
             <div class="relative z-10">
                 <p class="font-['Inter'] uppercase tracking-widest text-[10px] text-slate-500 mb-4">Alertas de Inventario</p>
-                <h3 class="text-3xl font-bold {{ $alertasInventario > 0 ? 'text-error' : 'text-emerald-400' }}">{{ $alertasInventario }}</h3>
-                <p class="text-on-surface-variant text-sm mt-1">{{ $alertasInventario == 1 ? 'Artículo crítico' : 'Artículos críticos' }}</p>
+                <h3 class="text-3xl font-bold text-error">3</h3>
+                <p class="text-on-surface-variant text-sm mt-1">Artículos críticos</p>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
-                <span class="material-symbols-outlined text-9xl {{ $alertasInventario > 0 ? 'text-error' : 'text-emerald-400' }}">{{ $alertasInventario > 0 ? 'warning' : 'check_circle' }}</span>
+                <span class="material-symbols-outlined text-9xl text-error">warning</span>
             </div>
         </div>
     </div>
@@ -79,7 +79,7 @@
             <div class="flex justify-between items-end mb-6">
                 <div>
                     <h4 class="text-xl font-bold text-white">Estado de Mesas</h4>
-                    <p class="text-sm text-on-surface-variant">Vista en tiempo real del salón principal ({{ $mesas->count() }} {{ $mesas->count() == 1 ? 'mesa' : 'mesas' }})</p>
+                    <p class="text-sm text-on-surface-variant">Vista en tiempo real del salón principal (17 mesas)</p>
                 </div>
                 <div class="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
                     <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-secondary"></span> Libre</div>
@@ -173,10 +173,12 @@
                 @endforeach
 
 
+                @if(auth()->user()->rol && auth()->user()->rol->name === 'admin')
                 <div onclick="openModal('modal-add-table')" class="bg-surface-container-low border border-white/5 rounded-xl flex flex-col items-center justify-center p-6 border-dashed border-2 hover:border-primary/50 transition-all cursor-pointer">
                     <span class="material-symbols-outlined text-3xl text-primary/50">add_circle</span>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-primary/50 mt-2">Nueva Mesa</span>
                 </div>
+                @endif
             </div>
 
             @push('scripts')
@@ -244,6 +246,20 @@
                         const list = Array.isArray(data.data) ? data.data : (data.mesas || data);
                         if (!list || !list.length) { grid.innerHTML = '<p class="text-sm text-slate-400">No hay mesas.</p>'; return; }
                         grid.innerHTML = list.map(renderSmallMesa).join('');
+                        // attach delete handlers
+                        document.querySelectorAll('.btn-delete-small-mesa').forEach(b=>{
+                            b.addEventListener('click', async ()=>{
+                                const id = b.getAttribute('data-id');
+                                if (!confirm('Eliminar mesa #' + id + '?')) return;
+                                try{
+                                    const token = localStorage.getItem('auth_token');
+                                    const headers = { 'Accept':'application/json' };
+                                    if (token) headers['Authorization'] = 'Bearer ' + token;
+                                    const r = await fetch(apiBase() + '/mesas/' + id, { method: 'DELETE', headers });
+                                    if (r.ok) fetchDashboardMesas();
+                                }catch(e){ console.error(e); }
+                            });
+                        });
                     }catch(e){ grid.innerHTML = '<p class="text-sm text-red-400">Error cargando mesas</p>'; }
                 }
 
@@ -269,29 +285,29 @@
         <div class="space-y-8">
             <section>
                 <div class="flex items-center gap-3 mb-6">
-                    <span class="material-symbols-outlined {{ $alertasInventario > 0 ? 'text-error' : 'text-emerald-400' }}" style="font-variation-settings: 'FILL' 1;">{{ $alertasInventario > 0 ? 'warning' : 'check_circle' }}</span>
+                    <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
                     <h4 class="text-xl font-bold text-white">Alertas del Sistema</h4>
                 </div>
 
-                <div class="bg-surface-container-low rounded-2xl p-3 space-y-3">
-                    @forelse($alertas as $a)
-                        <div class="bg-error-container/10 p-4 rounded-xl flex items-center gap-4 border border-error/20">
-                            <div class="w-12 h-12 rounded-lg bg-error/10 flex items-center justify-center flex-shrink-0">
-                                <span class="material-symbols-outlined text-error">warning</span>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-white truncate">{{ $a->nombre }}</p>
-                                <p class="text-xs text-on-surface-variant font-medium">Stock: {{ $a->stock_inicial }} (Mínimo: {{ $a->stock_minimo }})</p>
-                            </div>
+                <div class="bg-surface-container-low rounded-2xl p-2 space-y-2">
+                    @forelse($alertas as $alerta)
+                    <div class="bg-error-container/20 p-4 rounded-xl flex items-center gap-4 border border-error/10">
+                        <div class="w-12 h-12 rounded-lg bg-error-container flex items-center justify-center">
+                            <span class="material-symbols-outlined text-on-error-container">kitchen</span>
                         </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-white">{{ $alerta->nombre }}</p>
+                            <p class="text-xs text-on-surface-variant">Stock: {{ $alerta->stock_inicial }} {{ $alerta->unidad_medida }} (Crítico)</p>
+                        </div>
+                        <button class="bg-surface-container-highest p-2 rounded-lg hover:text-error transition-colors">
+                            <span class="material-symbols-outlined text-sm">shopping_cart</span>
+                        </button>
+                    </div>
                     @empty
-                        <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-xl flex flex-col items-center justify-center gap-3">
-                            <span class="material-symbols-outlined text-4xl">verified</span>
-                            <div class="text-center">
-                                <p class="font-black text-sm text-white">¡Todo en Orden!</p>
-                                <p class="text-xs text-slate-400 mt-1">No hay insumos con stock crítico en este momento.</p>
-                            </div>
-                        </div>
+                    <div class="p-6 text-center text-sm text-slate-400 flex flex-col items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-emerald-400 text-3xl">check_circle</span>
+                        <p>Todo está bien en el inventario.</p>
+                    </div>
                     @endforelse
                 </div>
             </section>

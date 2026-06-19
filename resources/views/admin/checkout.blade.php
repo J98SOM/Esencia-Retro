@@ -123,7 +123,7 @@
         <div class="flex items-center gap-6">
             <div class="text-right">
                 <p class="text-[10px] text-on-surface-variant uppercase font-black tracking-widest mb-0.5">Cajero en Turno</p>
-                <p class="text-base font-bold text-white">Alex S.</p>
+                <p class="text-base font-bold text-white">{{ auth()->user()->name ?? 'Cajero' }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <div class="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">

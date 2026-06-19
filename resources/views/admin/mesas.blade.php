@@ -15,9 +15,11 @@
                 <input id="mesas-search" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary text-on-surface placeholder:text-slate-500 rounded-xl px-4 py-3 pl-11 outline-none" placeholder="Buscar mesa..." type="text"/>
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">search</span>
             </div>
+            @if(auth()->user()->rol && auth()->user()->rol->name === 'admin')
             <button onclick="openModal('modal-add-table')" class="p-3 bg-primary rounded-xl text-on-primary font-bold hover:scale-95 transition-all whitespace-nowrap">
                 Nueva Mesa
             </button>
+            @endif
         </div>
     </div>
 
@@ -72,10 +74,12 @@
                     </div>
                     <div class="pt-4 border-t border-white/5 flex gap-2">
                         <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
+                        @if(auth()->user()->rol && auth()->user()->rol->name === 'admin')
                         <form method="POST" action="{{ route('admin.mesas.delete', ['id' => $m->id]) }}" onsubmit="return confirm('¿Eliminar mesa?')">
                             @csrf
                             <button type="submit" class="w-full py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">Eliminar</button>
                         </form>
+                        @endif
                     </div>
                 </div>
             </div>

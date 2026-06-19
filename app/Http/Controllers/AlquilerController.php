@@ -232,6 +232,9 @@ class AlquilerController extends Controller
      */
     public function update(Request $request, $id = null)
     {
+        if (auth()->user() && auth()->user()->rol && auth()->user()->rol->name === 'cocina') {
+            abort(403, 'Acción no autorizada.');
+        }
         $invoiceInput = $request->input('invoice');
         $invoice = [];
 

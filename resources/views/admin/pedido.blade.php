@@ -104,14 +104,14 @@
                     Cobrar Mesa
                 </button>
             </div>
-            
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-white/5 flex gap-4">
+
+            <div class="bg-surface-container-low rounded-2xl p-6 border border-white/5 flex gap-4 mt-6">
                 <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                     <span class="material-symbols-outlined text-emerald-400">person</span>
                 </div>
                 <div>
-                    <h5 class="font-bold text-white text-sm">Elena Martínez</h5>
-                    <p class="text-xs text-on-surface-variant">Mesera a cargo</p>
+                    <h5 class="font-bold text-white text-sm">{{ auth()->user()->name }}</h5>
+                    <p class="text-xs text-on-surface-variant capitalize">{{ optional(auth()->user()->rol)->name ?? 'Mesero' }} en turno</p>
                 </div>
             </div>
         </aside>

@@ -412,7 +412,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // CRUD de Usuarios (Web)
     Route::get('/users', function () {
-        $users = User::with('rol')->get();
+        $users = User::with('role')->get();
         $roles = Role::all();
         return view('admin.users', compact('users', 'roles'));
     })->name('users');
@@ -526,6 +526,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     })->name('alquiler');
 
     Route::get('/alquiler/{id}/edit', function ($id) {
+        if (auth()->user()->rol && auth()->user()->rol->name === 'cocina') {
+            abort(403, 'Acción no autorizada.');
+        }
         $max = DB::table('facturas')->where('tipo', 'evento')->select(DB::raw('MAX(CAST(numero_orden AS UNSIGNED)) as max'))->value('max');
         $next = $max ? intval($max) + 1 : 1;
         $nextStr = str_pad($next, 4, '0', STR_PAD_LEFT);
@@ -561,11 +564,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/alquiler/list', function (Request $request) {
         $query = Factura::query();
         
-        // Default to 'pos' so only invoices appear by default (hiding rentals unless explicitly filtered)
-        $tipo = $request->input('tipo', 'pos');
-        
-        if ($tipo !== 'todos') {
-            $query->where('tipo', $tipo);
+        if ($request->filled('tipo') && $request->tipo !== 'todos') {
+            $query->where('tipo', $request->tipo);
         }
         
         $facturas = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(20);
@@ -577,6 +577,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/alquiler/update', [AlquilerController::class, 'update'])->name('alquiler.update');
 
     Route::delete('/alquiler/{id}', function ($id) {
+        if (auth()->user()->rol && auth()->user()->rol->name === 'cocina') {
+            abort(403, 'Acción no autorizada.');
+        }
         ProductoXFactura::where('factura_id', $id)->delete();
         \App\Models\MetodoPago::where('factura_id', $id)->delete();
         Factura::destroy($id);
