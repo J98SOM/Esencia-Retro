@@ -116,4 +116,29 @@
         @endforelse
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.Echo) {
+            window.Echo.channel('pedidos-canal')
+                .listen('.pedido.actualizado', (e) => {
+                    console.log('Pedido actualizado recibido en cocina:', e);
+                    fetch(window.location.href)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            const newList = doc.getElementById('kitchen-list');
+                            const currentList = document.getElementById('kitchen-list');
+                            if (newList && currentList) {
+                                currentList.innerHTML = newList.innerHTML;
+                            }
+                        })
+                        .catch(err => console.error('Error al actualizar cocina:', err));
+                });
+        }
+    });
+</script>
+@endpush
 @endsection

@@ -5,7 +5,7 @@
 @section('content')
 <div class="p-8 flex-1">
     <!-- Header Section -->
-    <header class="flex justify-between items-center mb-10">
+    <header id="pedido-header" class="flex justify-between items-center mb-10">
         <div>
             <nav class="flex items-center space-x-2 text-xs text-on-surface-variant mb-2">
                 <span>Gestión</span>
@@ -39,7 +39,7 @@
         </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+    <div id="pedido-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <!-- Order List (Left/Main) -->
         <div class="lg:col-span-2 bg-surface-container-low rounded-2xl p-8 border border-white/5 flex flex-col h-full">
             <div class="flex justify-between items-center mb-6">
@@ -117,4 +117,39 @@
         </aside>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.Echo) {
+            window.Echo.channel('pedidos-canal')
+                .listen('.pedido.actualizado', (e) => {
+                    console.log('Pedido actualizado recibido en detalle de pedido:', e);
+                    // Only refresh if the event corresponds to this table
+                    if (String(e.mesaId) === String('{{ $mesaId }}')) {
+                        fetch(window.location.href)
+                            .then(response => response.text())
+                            .then(html => {
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                
+                                const newHeader = doc.getElementById('pedido-header');
+                                const currentHeader = document.getElementById('pedido-header');
+                                if (newHeader && currentHeader) {
+                                    currentHeader.innerHTML = newHeader.innerHTML;
+                                }
+
+                                const newGrid = doc.getElementById('pedido-grid');
+                                const currentGrid = document.getElementById('pedido-grid');
+                                if (newGrid && currentGrid) {
+                                    currentGrid.innerHTML = newGrid.innerHTML;
+                                }
+                            })
+                            .catch(err => console.error('Error al actualizar detalle de pedido:', err));
+                    }
+                });
+        }
+    });
+</script>
+@endpush
 @endsection

@@ -117,36 +117,85 @@
 @push('scripts')
 <script>
 (function(){
-    const searchInput = document.getElementById('mesas-search');
-    const cards = document.querySelectorAll('.mesa-card-item');
-    const filterButtons = document.querySelectorAll('#mesas-filters button');
     let currentFilter = 'all';
 
-    function filterList() {
-        const query = searchInput.value.toLowerCase().trim();
-        cards.forEach(card => {
-            const status = card.getAttribute('data-status') || '';
-            const nombre = card.getAttribute('data-nombre') || '';
-            const matchesQuery = nombre.includes(query);
-            const matchesFilter = (currentFilter === 'all') || (status === currentFilter);
+    function initMesasFilters() {
+        const searchInput = document.getElementById('mesas-search');
+        const cards = document.querySelectorAll('.mesa-card-item');
+        const filterButtons = document.querySelectorAll('#mesas-filters button');
 
-            if (matchesQuery && matchesFilter) {
-                card.style.display = '';
+        function filterList() {
+            const query = searchInput.value.toLowerCase().trim();
+            cards.forEach(card => {
+                const status = card.getAttribute('data-status') || '';
+                const nombre = card.getAttribute('data-nombre') || '';
+                const matchesQuery = nombre.includes(query);
+                const matchesFilter = (currentFilter === 'all') || (status === currentFilter);
+
+                if (matchesQuery && matchesFilter) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Rebind search input
+        const cleanSearch = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(cleanSearch, searchInput);
+        cleanSearch.addEventListener('input', filterList);
+
+        // Rebind buttons
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterButtons.forEach(b => b.classList.remove('bg-primary', 'text-on-primary'));
+                btn.classList.add('bg-primary', 'text-on-primary');
+                currentFilter = btn.getAttribute('data-status');
+                filterList();
+            });
+        });
+        
+        // Restore active filter button visually
+        filterButtons.forEach(b => {
+            if (b.getAttribute('data-status') === currentFilter) {
+                b.classList.add('bg-primary', 'text-on-primary');
             } else {
-                card.style.display = 'none';
+                b.classList.remove('bg-primary', 'text-on-primary');
             }
         });
+        filterList();
     }
 
-    searchInput.addEventListener('input', filterList);
+    document.addEventListener('DOMContentLoaded', () => {
+        initMesasFilters();
 
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterButtons.forEach(b => b.classList.remove('bg-primary', 'text-on-primary'));
-            btn.classList.add('bg-primary', 'text-on-primary');
-            currentFilter = btn.getAttribute('data-status');
-            filterList();
-        });
+        if (window.Echo) {
+            window.Echo.channel('pedidos-canal')
+                .listen('.pedido.actualizado', (e) => {
+                    console.log('Pedido actualizado recibido en mesas:', e);
+                    fetch(window.location.href)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            const newGrid = doc.getElementById('mesas-grid');
+                            const currentGrid = document.getElementById('mesas-grid');
+                            if (newGrid && currentGrid) {
+                                currentGrid.innerHTML = newGrid.innerHTML;
+                            }
+                            
+                            const newFilters = doc.getElementById('mesas-filters');
+                            const currentFilters = document.getElementById('mesas-filters');
+                            if (newFilters && currentFilters) {
+                                currentFilters.innerHTML = newFilters.innerHTML;
+                            }
+
+                            initMesasFilters();
+                        })
+                        .catch(err => console.error('Error al actualizar mesas:', err));
+                });
+        }
     });
 })();
 </script>

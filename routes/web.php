@@ -290,6 +290,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         });
         $factura->save();
         
+        event(new \App\Events\PedidoActualizado($id));
+        
         return redirect()->route('admin.pedido', ['id' => $id])->with('success', 'Pedido actualizado.');
     })->name('pedido.add');
 
@@ -306,6 +308,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             });
             $factura->save();
         }
+        
+        event(new \App\Events\PedidoActualizado($mesaId));
         
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
     })->name('pedido.delete_item');
@@ -397,8 +401,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         } // close if ($factura)
         
         if ($request->ajax()) {
+            event(new \App\Events\PedidoActualizado($id));
             return response()->json(['success' => true, 'factura_id' => $factura->id ?? null]);
         }
+        
+        event(new \App\Events\PedidoActualizado($id));
         
         return redirect()->route('admin.mesas')
             ->with('success', 'Factura cobrada y mesa liberada.')
@@ -608,6 +615,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         $tracking->estatus = $request->input('estatus');
         $tracking->save();
+        
+        $mesaId = $pxf->factura->mesa_id ?? null;
+        if ($mesaId) {
+            event(new \App\Events\PedidoActualizado($mesaId));
+        }
         
         return redirect()->route('admin.cocina')->with('success', 'Estatus del producto actualizado.');
     })->name('cocina.item.status');
