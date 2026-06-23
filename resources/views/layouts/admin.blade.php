@@ -226,12 +226,7 @@
                                 </div>
                                 <div class="mt-4 flex items-center gap-3">
                                     <label class="text-xs text-slate-500 font-bold">CANTIDAD:</label>
-                                    <select name="products[{{ $p->id }}]" class="rounded bg-surface-container-highest border border-white/10 text-white text-sm p-1">
-                                        <option value="0" selected>0</option>
-                                        @for($i=1; $i<=20; $i++)
-                                            <option value="{{ $i }}">{{ $i }}</option>
-                                        @endfor
-                                    </select>
+                                    <input type="number" name="products[{{ $p->id }}]" min="0" value="0" class="w-20 rounded bg-surface-container-highest border border-white/10 text-white text-sm p-1 px-2 text-center focus:outline-none focus:border-primary">
                                 </div>
                             </div>
                         </div>
