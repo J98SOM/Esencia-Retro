@@ -89,13 +89,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             ->whereRaw('stock_inicial <= stock_minimo')
             ->get();
 
-        return view('admin.dashboard', compact('mesas', 'ventasDia', 'pedidosActivos', 'topProducto', 'topProductoQty', 'alertasInventario', 'alertas'));
+        return view('dashboard.index', compact('mesas', 'ventasDia', 'pedidosActivos', 'topProducto', 'topProductoQty', 'alertasInventario', 'alertas'));
     })->name('dashboard');
 
     // CRUD de Productos (Web)
     Route::get('/productos', function () {
         $productos = Producto::all();
-        return view('admin.productos', compact('productos'));
+        return view('productos.index', compact('productos'));
     })->name('productos');
 
     Route::post('/productos', function (Request $request) {
@@ -148,7 +148,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $inventarios = Inventario::with('producto')->get();
         $productos = Producto::all();
         $alertasInventario = Inventario::whereRaw('stock_inicial <= stock_minimo')->count();
-        return view('admin.inventario', compact('inventarios', 'productos', 'alertasInventario'));
+        return view('inventario.index', compact('inventarios', 'productos', 'alertasInventario'));
     })->name('inventario');
 
     Route::post('/inventario', function (Request $request) {
@@ -187,7 +187,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     // CRUD de Mesas (Web)
     Route::get('/mesas', function () {
         $mesas = Mesa::with(['latestFactura.productos.producto'])->orderBy('nombre')->get();
-        return view('admin.mesas', compact('mesas'));
+        return view('admin_mesas.index', compact('mesas'));
     })->name('mesas');
 
     Route::post('/mesas', function (Request $request) {
@@ -217,7 +217,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $total = $factura->monto_total;
         }
 
-        return view('admin.pedido', [
+        return view('pedido.index', [
             'mesa' => $mesa,
             'mesaId' => $id,
             'factura' => $factura,
@@ -314,6 +314,35 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
     })->name('pedido.delete_item');
 
+    Route::post('/mesas/{mesaId}/pedido/item/{itemId}/update', function (Request $request, $mesaId, $itemId) {
+        $item = ProductoXFactura::findOrFail($itemId);
+        $factura = $item->factura;
+        $cantidad = intval($request->input('cantidad', 1));
+        
+        if ($cantidad <= 0) {
+            $item->delete();
+            if ($factura->productos()->count() == 0) {
+                $factura->delete();
+            } else {
+                $factura->monto_total = $factura->productos->sum(function($it) {
+                    return $it->cantidad * $it->precio_unitario;
+                });
+                $factura->save();
+            }
+            return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
+        }
+        
+        $item->cantidad = $cantidad;
+        $item->save();
+        
+        $factura->monto_total = $factura->productos->sum(function($it) {
+            return $it->cantidad * $it->precio_unitario;
+        });
+        $factura->save();
+        
+        return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Cantidad actualizada.');
+    })->name('pedido.update_item');
+
     Route::get('/mesas/{id}/checkout', function ($id) {
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
@@ -327,7 +356,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $servicio = 0;
         $total = $subtotal;
 
-        return view('admin.checkout', [
+        return view('checkout.index', [
             'mesa' => $mesa,
             'mesaId' => $id,
             'factura' => $factura,
@@ -414,14 +443,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::get('/factura/{id}/pos-receipt', function ($id) {
         $factura = Factura::with(['productos.producto', 'metodosPago'])->findOrFail($id);
-        return view('admin.pos_receipt', compact('factura'));
+        return view('pos_receipt.index', compact('factura'));
     })->name('pos.receipt');
 
     // CRUD de Usuarios (Web)
     Route::get('/users', function () {
         $users = User::with('role')->get();
         $roles = Role::all();
-        return view('admin.users', compact('users', 'roles'));
+        return view('users.index', compact('users', 'roles'));
     })->name('users');
 
     Route::post('/users', function (Request $request) {
@@ -462,7 +491,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     // CRUD de Roles (Web)
     Route::get('/roles', function () {
         $roles = Role::all();
-        return view('admin.roles', compact('roles'));
+        return view('roles.index', compact('roles'));
     })->name('roles');
 
     Route::post('/roles', function (Request $request) {
@@ -491,7 +520,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     })->name('roles.delete');
 
     Route::get('/reportes', function () {
-        return view('admin.reportes');
+        return view('reportes.index');
     })->name('reportes');
 
     Route::get('/alquiler', function (Request $request) {
@@ -522,7 +551,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
         $products = Producto::select('id', 'nombre', 'precio')->get();
 
-        return view('admin.alquiler', [
+        return view('admin_alquiler.index', [
             'nextInvoiceNo' => $nextStr,
             'factura' => $factura,
             'items' => $items,
@@ -559,7 +588,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
         $products = Producto::select('id', 'nombre', 'precio')->get();
 
-        return view('admin.alquiler', [
+        return view('admin_alquiler.index', [
             'nextInvoiceNo' => $nextStr,
             'factura' => $factura,
             'items' => $items,
@@ -577,7 +606,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         
         $facturas = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(20);
         $mesas = Mesa::orderBy('nombre')->get();
-        return view('admin.alquiler_list', compact('facturas', 'mesas'));
+        return view('admin_alquiler_list.index', compact('facturas', 'mesas'));
     })->name('alquiler.list');
 
     Route::post('/alquiler/store', [AlquilerController::class, 'store'])->name('alquiler.store');
@@ -599,7 +628,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             ->whereNotIn(DB::raw('LOWER(estatus)'), ['pagado', 'pagada'])
             ->orderBy('id', 'desc')
             ->get();
-        return view('admin.cocina', compact('orders'));
+        return view('cocina.index', compact('orders'));
     })->name('cocina');
 
     Route::post('/cocina/item/{id}/status', function (Request $request, $id) {

@@ -3,9 +3,12 @@
 @section('title', 'Esencia Retro - Detalle de Mesa')
 
 @section('content')
+@php
+    $isMesero = auth()->user()->rol && auth()->user()->rol->name === 'mesero';
+@endphp
 <div class="p-8 flex-1">
     <!-- Header Section -->
-    <header id="pedido-header" class="flex justify-between items-center mb-10">
+    <header class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-10">
         <div>
             <nav class="flex items-center space-x-2 text-xs text-on-surface-variant mb-2">
                 <span>Gestión</span>
@@ -27,6 +30,7 @@
             </h2>
             <p class="text-on-surface-variant text-sm mt-1">Añade o modifica los productos ordenados en esta mesa.</p>
         </div>
+        @if(!$isMesero)
         <div class="flex items-center gap-4">
             <button @if(isset($factura) && $factura->id) onclick="window.open('{{ route('admin.pos.receipt', $factura->id) }}', '_blank', 'width=400,height=600')" @else onclick="alert('No hay una factura activa para imprimir.')" @endif class="bg-surface-container-high hover:bg-surface-bright text-on-surface p-3 rounded-xl transition-colors font-bold flex items-center gap-2">
                 <span class="material-symbols-outlined">print</span>
@@ -37,11 +41,12 @@
                 Cerrar Mesa
             </button>
         </div>
+        @endif
     </header>
 
-    <div id="pedido-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+    <div class="grid grid-cols-1 @if(!$isMesero) lg:grid-cols-3 @endif gap-8 mb-12">
         <!-- Order List (Left/Main) -->
-        <div class="lg:col-span-2 bg-surface-container-low rounded-2xl p-8 border border-white/5 flex flex-col h-full">
+        <div class="@if(!$isMesero) lg:col-span-2 @endif bg-surface-container-low rounded-2xl p-6 md:p-8 border border-white/5 flex flex-col h-full">
             <div class="flex justify-between items-center mb-6">
                 <h4 class="text-xl font-bold text-white">Detalle del Pedido</h4>
                 <button onclick="openModal('modal-add-product-order')" class="text-primary font-bold text-sm flex items-center gap-1 hover:text-primary-fixed-dim transition-colors">
@@ -56,17 +61,19 @@
                         $prod = $item->producto;
                         $precioTotal = $item->cantidad * $item->precio_unitario;
                     @endphp
-                    <div class="bg-surface-container-highest/50 p-4 rounded-xl flex justify-between items-center border border-white/5 hover:border-white/10 transition-colors">
+                    <div class="bg-surface-container-highest/50 p-4 rounded-xl flex flex-col sm:flex-row gap-4 justify-between sm:items-center border border-white/5 hover:border-white/10 transition-colors">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-surface-container-low rounded-lg flex items-center justify-center font-bold text-lg text-white">
-                                {{ intval($item->cantidad) }}x
-                            </div>
+                            <form action="{{ route('admin.pedido.update_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline-flex items-center">
+                                @csrf
+                                <input type="number" name="cantidad" value="{{ intval($item->cantidad) }}" min="0" onchange="this.form.submit()" class="w-16 h-12 rounded-lg bg-surface-container-low border border-white/10 text-white text-lg font-bold text-center focus:outline-none focus:border-primary transition-colors">
+                                <span class="text-white font-bold ml-2 mr-1 text-lg">x</span>
+                            </form>
                             <div>
                                 <p class="font-bold text-white text-lg">{{ $prod->nombre ?? $item->descripcion }}</p>
                                 <p class="text-slate-500 text-xs mt-1">Precio unitario: ${{ number_format($item->precio_unitario, 0, ',', '.') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-6">
+                        <div class="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t border-white/5 pt-3 sm:pt-0 sm:border-0">
                             <p class="text-lg font-bold text-white">${{ number_format($precioTotal, 0, ',', '.') }}</p>
                             <form action="{{ route('admin.pedido.delete_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline">
                                 @csrf
@@ -83,6 +90,7 @@
             </div>
         </div>
 
+        @if(!$isMesero)
         <!-- Order Summary (Right Side) -->
         <aside class="flex flex-col gap-6">
             <div class="bg-surface-container-low rounded-2xl p-8 border border-white/5 group">
@@ -115,6 +123,7 @@
                 </div>
             </div>
         </aside>
+        @endif
     </div>
 </div>
 
