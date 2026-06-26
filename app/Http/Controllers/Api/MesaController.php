@@ -11,7 +11,11 @@ class MesaController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Mesa::orderBy('id', 'desc')->get());
+        $mesas = Mesa::with(['latestFactura'])
+            ->orderByRaw('LENGTH(nombre) ASC')
+            ->orderBy('nombre', 'ASC')
+            ->get();
+        return response()->json($mesas);
     }
 
     public function store(MesaRequest $request): JsonResponse

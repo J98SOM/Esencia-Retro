@@ -24,10 +24,10 @@
         <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group">
             <div class="relative z-10">
                 <p class="font-['Inter'] uppercase tracking-widest text-[10px] text-slate-500 mb-4">Ventas del Día</p>
-                <h3 class="text-3xl font-bold text-white">$12,458</h3>
+                <h3 class="text-3xl font-bold text-white">${{ number_format($ventasDia, 2) }}</h3>
                 <div class="flex items-center gap-1 text-emerald-400 text-xs font-bold mt-2">
                     <span class="material-symbols-outlined text-sm">trending_up</span>
-                    +12.5%
+                    Hoy
                 </div>
             </div>
             <div class="absolute -right-4 -bottom-4 text-slate-400 opacity-20 group-hover:scale-110 transition-transform duration-500">
@@ -38,10 +38,10 @@
         <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group">
             <div class="relative z-10">
                 <p class="font-['Inter'] uppercase tracking-widest text-[10px] text-slate-500 mb-4">Pedidos Activos</p>
-                <h3 class="text-3xl font-bold text-white">24</h3>
+                <h3 class="text-3xl font-bold text-white">{{ $pedidosActivos }}</h3>
                 <div class="flex items-center gap-1 text-primary text-xs font-bold mt-2">
-                    <span class="material-symbols-outlined text-sm">add_circle</span>
-                    +8 nuevos
+                    <span class="material-symbols-outlined text-sm">restaurant</span>
+                    En curso
                 </div>
             </div>
             <div class="absolute -right-4 -bottom-4 text-slate-400 opacity-20 group-hover:scale-110 transition-transform duration-500">
@@ -52,8 +52,8 @@
         <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group">
             <div class="relative z-10">
                 <p class="font-['Inter'] uppercase tracking-widest text-[10px] text-slate-500 mb-4">Producto Más Vendido</p>
-                <h3 class="text-xl font-bold text-white leading-tight">Hamburguesa Premium</h3>
-                <p class="text-on-surface-variant text-sm mt-1">48 unidades vendidas</p>
+                <h3 class="text-xl font-bold text-white leading-tight truncate" title="{{ $topProducto }}">{{ $topProducto }}</h3>
+                <p class="text-on-surface-variant text-sm mt-1">{{ $topProductoQty }} unidades</p>
             </div>
             <div class="absolute -right-4 -bottom-4 text-slate-400 opacity-20 group-hover:scale-110 transition-transform duration-500">
                 <span class="material-symbols-outlined text-9xl text-white">lunch_dining</span>
@@ -63,7 +63,7 @@
         <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden group border border-error/5">
             <div class="relative z-10">
                 <p class="font-['Inter'] uppercase tracking-widest text-[10px] text-slate-500 mb-4">Alertas de Inventario</p>
-                <h3 class="text-3xl font-bold text-error">3</h3>
+                <h3 class="text-3xl font-bold text-error">{{ $alertasInventario }}</h3>
                 <p class="text-on-surface-variant text-sm mt-1">Artículos críticos</p>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
@@ -79,102 +79,63 @@
             <div class="flex justify-between items-end mb-6">
                 <div>
                     <h4 class="text-xl font-bold text-white">Estado de Mesas</h4>
-                    <p class="text-sm text-on-surface-variant">Vista en tiempo real del salón principal (17 mesas)</p>
+                    <p class="text-sm text-on-surface-variant">Vista en tiempo real del salón principal ({{ $mesas->count() }} mesas)</p>
                 </div>
                 <div class="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
                     <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-secondary"></span> Libre</div>
-                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary-container"></span> Ocupada</div>
-                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-tertiary-container"></span> Reservada</div>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span> Ocupada</div>
                 </div>
             </div>
 
-            @php
-            $mesasMock = [
-                ['id'=>1, 'zona'=>'Salón Principal', 'numero'=>'01', 'estado'=>'Ocupada', 'pax'=>4, 'total'=>1240.0, 'tiempo'=>'01:14:00'],
-                ['id'=>2, 'zona'=>'Salón Principal', 'numero'=>'02', 'estado'=>'Libre', 'pax'=>2, 'tiempo'=>'', 'total'=>0],
-                ['id'=>3, 'zona'=>'Salón Principal', 'numero'=>'03', 'estado'=>'Reservada', 'cliente'=>'G. Rossi (4pax)', 'hora'=>'Hoy - 20:30', 'pax'=>0, 'total'=>0],
-                ['id'=>4, 'zona'=>'Salón Principal', 'numero'=>'04', 'estado'=>'Ocupada', 'pax'=>6, 'total'=>4100.0, 'tiempo'=>'00:42:15'],
-                ['id'=>5, 'zona'=>'Salón Principal', 'numero'=>'05', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-                ['id'=>6, 'zona'=>'Salón Principal', 'numero'=>'06', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-                ['id'=>7, 'zona'=>'Salón Principal', 'numero'=>'07', 'estado'=>'Ocupada', 'pax'=>2, 'total'=>850.0, 'tiempo'=>'00:15:00'],
-                ['id'=>8, 'zona'=>'Salón Principal', 'numero'=>'08', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-                ['id'=>9, 'zona'=>'Salón Principal', 'numero'=>'09', 'estado'=>'Libre', 'pax'=>2, 'tiempo'=>'', 'total'=>0],
-                ['id'=>10, 'zona'=>'Salón Principal', 'numero'=>'10', 'estado'=>'Reservada', 'cliente'=>'A. Gomez (2pax)', 'hora'=>'Hoy - 21:00', 'pax'=>0, 'total'=>0],
-                ['id'=>11, 'zona'=>'Salón Principal', 'numero'=>'11', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-                ['id'=>12, 'zona'=>'Salón Principal', 'numero'=>'12', 'estado'=>'Ocupada', 'pax'=>4, 'total'=>2300.0, 'tiempo'=>'02:10:05'],
-                ['id'=>13, 'zona'=>'Terraza', 'numero'=>'13', 'estado'=>'Libre', 'pax'=>2, 'tiempo'=>'', 'total'=>0],
-                ['id'=>14, 'zona'=>'Terraza', 'numero'=>'14', 'estado'=>'Ocupada', 'pax'=>6, 'total'=>5400.0, 'tiempo'=>'01:45:00'],
-                ['id'=>15, 'zona'=>'Terraza', 'numero'=>'15', 'estado'=>'Libre', 'pax'=>4, 'tiempo'=>'', 'total'=>0],
-                ['id'=>16, 'zona'=>'VIP', 'numero'=>'16', 'estado'=>'Libre', 'pax'=>8, 'tiempo'=>'', 'total'=>0],
-                ['id'=>17, 'zona'=>'VIP', 'numero'=>'17', 'estado'=>'Reservada', 'cliente'=>'M. Lopez (10pax)', 'hora'=>'Mañana - 22:00', 'pax'=>0, 'total'=>0],
-            ];
-            @endphp
-
             <div id="dashboard-mesas-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                <!-- Mesa Items loop -->
-                @foreach($mesasMock as $m)
-                    @if($m['estado'] === 'Ocupada')
-                    <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group active-glow">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-lg font-bold text-white">M-{{ $m['numero'] }}</span>
-                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary-container/10 text-primary-container border border-primary-container/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_rgba(208,188,255,0.5)]"></span>
-                                Ocupada
+                @foreach($mesas as $m)
+                    @php
+                        $isOccupied = $m->latestFactura && !in_array(strtolower($m->latestFactura->estatus), ['pagado', 'pagada']);
+                    @endphp
+                    @if($isOccupied)
+                        <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group active-glow">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-lg font-bold text-white">{{ $m->nombre }}</span>
+                                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/10 text-primary border border-primary/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(234,188,78,0.5)]"></span>
+                                    Ocupada
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
+                                <span class="material-symbols-outlined text-base">group</span>
+                                <span class="text-xs font-medium">{{ $m->capacidad ?? '-' }} personas</span>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center gap-2">
+                                <span class="text-sm font-bold text-white">${{ number_format($m->latestFactura->monto_total ?? 0, 2) }}</span>
+                                <div class="flex gap-2">
+                                    <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="p-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm" title="Ver pedido">
+                                        <span class="material-symbols-outlined text-sm">visibility</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
-                            <span class="material-symbols-outlined text-base">group</span>
-                            <span class="text-xs font-medium">{{ $m['pax'] }} personas</span>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center gap-2">
-                            <span class="text-sm font-bold text-white">${{ number_format($m['total'], 2) }}</span>
-                            <div class="flex gap-2">
-                                <a href="{{ route('admin.pedido', ['id' => $m['id']]) }}" class="p-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm" title="Ver pedido">
-                                    <span class="material-symbols-outlined text-sm">visibility</span>
-                                </a>
+                    @else
+                        <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-secondary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-lg font-bold text-white">{{ $m->nombre }}</span>
+                                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-secondary/10 text-secondary border border-secondary/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    Libre
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
+                                <span class="material-symbols-outlined text-base">group</span>
+                                <span class="text-xs font-medium">{{ $m->capacidad ?? '-' }} personas</span>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-white/5">
+                                <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-secondary/20 text-secondary hover:bg-secondary hover:text-white text-center block transition-all shadow-sm">ASIGNAR / PEDIDO</a>
                             </div>
                         </div>
-                    </div>
-                    @elseif($m['estado'] === 'Libre')
-                    <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-secondary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-lg font-bold text-white">M-{{ $m['numero'] }}</span>
-                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-secondary/10 text-secondary border border-secondary/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                                Libre
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
-                            <span class="material-symbols-outlined text-base">group</span>
-                            <span class="text-xs font-medium">{{ $m['pax'] }} personas</span>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-white/5">
-                            <button onclick="openModal('modal-open-table')" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-secondary/20 text-secondary hover:bg-secondary hover:text-white transition-all shadow-sm">ASIGNAR</button>
-                        </div>
-                    </div>
-                    @elseif($m['estado'] === 'Reservada')
-                    <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-tertiary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-lg font-bold text-white">M-{{ $m['numero'] }}</span>
-                            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-tertiary-container shadow-[0_0_8px_rgba(255,180,171,0.3)]"></span>
-                                Reservada
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
-                            <span class="material-symbols-outlined text-base">calendar_today</span>
-                            <span class="text-xs font-medium">{{ $m['hora'] }}</span>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-white/5">
-                            <p class="text-[10px] text-on-surface-variant truncate">Cliente: {{ explode('(', $m['cliente'])[0] }}</p>
-                        </div>
-                    </div>
                     @endif
                 @endforeach
 
-
                 @if(auth()->user()->rol && auth()->user()->rol->name === 'admin')
-                <div onclick="openModal('modal-add-table')" class="bg-surface-container-low border border-white/5 rounded-xl flex flex-col items-center justify-center p-6 border-dashed border-2 hover:border-primary/50 transition-all cursor-pointer">
+                <div onclick="window.location.href='{{ route('admin.mesas') }}'" class="bg-surface-container-low border border-white/5 rounded-xl flex flex-col items-center justify-center p-6 border-dashed border-2 hover:border-primary/50 transition-all cursor-pointer">
                     <span class="material-symbols-outlined text-3xl text-primary/50">add_circle</span>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-primary/50 mt-2">Nueva Mesa</span>
                 </div>
@@ -184,87 +145,26 @@
             @push('scripts')
             <script>
             (function(){
-                const grid = document.getElementById('dashboard-mesas-grid');
-                if (!grid) return;
-                function apiBase(){ return (window.VITE_API_URL || window.API_BASE || '/api').replace(/\/$/, ''); }
-
-                function renderSmallMesa(m){
-                    const id = m.id || '';
-                    const nombre = m.nombre || m.identifier || ('Mesa ' + id);
-                    const capacidad = m.capacidad || m.capacity || '';
-                    const estado = (m.estado || m.status || 'libre').toString().toLowerCase();
-                    
-                    let bgClass = 'bg-secondary/10';
-                    let textClass = 'text-secondary';
-                    let borderClass = 'border-secondary/20';
-                    let dotBg = 'bg-secondary';
-                    
-                    if (estado.includes('ocup')) {
-                        bgClass = 'bg-primary/10';
-                        textClass = 'text-primary';
-                        borderClass = 'border-primary/20';
-                        dotBg = 'bg-primary shadow-[0_0_8px_rgba(208,188,255,0.5)]';
-                    } else if (estado.includes('reserv')) {
-                        bgClass = 'bg-tertiary-container/10';
-                        textClass = 'text-tertiary-container';
-                        borderClass = 'border-tertiary-container/20';
-                        dotBg = 'bg-tertiary-container shadow-[0_0_8px_rgba(255,180,171,0.3)]';
-                    }
-
-                    return `
-                        <div class="bg-surface-container/60 backdrop-blur-md p-5 rounded-2xl border border-white/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 shadow-lg group ${estado==='ocupada' ? 'active-glow' : ''}">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="text-lg font-bold text-white">${nombre}</span>
-                                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${bgClass} ${textClass} border ${borderClass}">
-                                    <span class="w-1.5 h-1.5 rounded-full ${dotBg}"></span>
-                                    ${estado.toUpperCase()}
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 text-on-surface-variant/80 my-3">
-                                <span class="material-symbols-outlined text-base">group</span>
-                                <span class="text-xs font-medium">${capacidad || '-'} personas</span>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center gap-2">
-                                <a href="/admin/mesas/${id}/pedido" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl text-xs font-bold tracking-wide transition-all shadow-sm">
-                                    <span class="material-symbols-outlined text-sm">visibility</span>
-                                    Detalles
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                async function fetchDashboardMesas(){
-                    grid.innerHTML = '<p class="text-sm text-slate-400">Cargando mesas…</p>';
-                    try{
-                        const token = localStorage.getItem('auth_token');
-                        const headers = { 'Accept':'application/json' };
-                        if (token) headers['Authorization'] = 'Bearer ' + token;
-                        const res = await fetch(apiBase() + '/mesas', { headers });
-                        if (res.status === 401) return; // let main app handle
-                        const data = await res.json();
-                        const list = Array.isArray(data.data) ? data.data : (data.mesas || data);
-                        if (!list || !list.length) { grid.innerHTML = '<p class="text-sm text-slate-400">No hay mesas.</p>'; return; }
-                        grid.innerHTML = list.map(renderSmallMesa).join('');
-                        // attach delete handlers
-                        document.querySelectorAll('.btn-delete-small-mesa').forEach(b=>{
-                            b.addEventListener('click', async ()=>{
-                                const id = b.getAttribute('data-id');
-                                if (!confirm('Eliminar mesa #' + id + '?')) return;
-                                try{
-                                    const token = localStorage.getItem('auth_token');
-                                    const headers = { 'Accept':'application/json' };
-                                    if (token) headers['Authorization'] = 'Bearer ' + token;
-                                    const r = await fetch(apiBase() + '/mesas/' + id, { method: 'DELETE', headers });
-                                    if (r.ok) fetchDashboardMesas();
-                                }catch(e){ console.error(e); }
-                            });
+                // Refresh dashboard dynamically on Echo updates to maintain live state without API token overhead
+                if (window.Echo) {
+                    window.Echo.channel('pedidos-canal')
+                        .listen('.pedido.actualizado', (e) => {
+                            console.log('Pedido actualizado recibido en dashboard:', e);
+                            fetch(window.location.href)
+                                .then(response => response.text())
+                                .then(html => {
+                                    const parser = new DOMParser();
+                                    const doc = parser.parseFromString(html, 'text/html');
+                                    
+                                    const newGrid = doc.getElementById('dashboard-mesas-grid');
+                                    const currentGrid = document.getElementById('dashboard-mesas-grid');
+                                    if (newGrid && currentGrid) {
+                                        currentGrid.innerHTML = newGrid.innerHTML;
+                                    }
+                                })
+                                .catch(err => console.error('Error al actualizar dashboard:', err));
                         });
-                    }catch(e){ grid.innerHTML = '<p class="text-sm text-red-400">Error cargando mesas</p>'; }
                 }
-
-                try{ fetchDashboardMesas(); }catch(e){}
-                document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState === 'visible') fetchDashboardMesas(); });
             })();
             </script>
             @endpush
