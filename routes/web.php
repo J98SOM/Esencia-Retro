@@ -67,7 +67,10 @@ Route::post('/logout', function (Request $request) {
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     
     Route::get('/dashboard', function () {
-        $mesas = Mesa::with(['latestFactura.productos.producto'])->orderBy('nombre')->get();
+        $mesas = Mesa::with(['latestFactura.productos.producto'])
+            ->orderByRaw('LENGTH(nombre) ASC')
+            ->orderBy('nombre', 'ASC')
+            ->get();
         $ventasDia = Factura::whereDate('fecha', today())
             ->whereIn(DB::raw('LOWER(estatus)'), ['pagado', 'pagada'])
             ->sum('monto_total');
@@ -186,15 +189,38 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // CRUD de Mesas (Web)
     Route::get('/mesas', function () {
-        $mesas = Mesa::with(['latestFactura.productos.producto'])->orderBy('nombre')->get();
+        $mesas = Mesa::with(['latestFactura.productos.producto'])
+            ->orderByRaw('LENGTH(nombre) ASC')
+            ->orderBy('nombre', 'ASC')
+            ->get();
         return view('admin_mesas.index', compact('mesas'));
     })->name('mesas');
 
     Route::post('/mesas', function (Request $request) {
+        $request->merge([
+            'nombre' => $request->filled('nombre') ? $request->nombre : null,
+        ]);
+        
         $data = $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'nullable|string|max:255',
             'capacidad' => 'nullable|integer',
         ]);
+
+        if (empty($data['nombre'])) {
+            // Find all tables that start with "Mesa " followed by a number
+            $mesas = Mesa::all();
+            $maxNumber = 0;
+            foreach ($mesas as $mesa) {
+                if (preg_match('/^Mesa\s+(\d+)$/i', trim($mesa->nombre), $matches)) {
+                    $num = (int)$matches[1];
+                    if ($num > $maxNumber) {
+                        $maxNumber = $num;
+                    }
+                }
+            }
+            $data['nombre'] = 'Mesa ' . ($maxNumber + 1);
+        }
+
         Mesa::create($data);
         return redirect()->route('admin.mesas')->with('success', 'Mesa registrada correctamente.');
     })->name('mesas.store');

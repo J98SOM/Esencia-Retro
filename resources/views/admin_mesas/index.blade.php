@@ -98,9 +98,21 @@
         </div>
         <form method="POST" action="{{ route('admin.mesas.store') }}" class="space-y-4">
             @csrf
+            @php
+                $allMesas = \App\Models\Mesa::all();
+                $nextMesaNum = 1;
+                foreach ($allMesas as $mesa) {
+                    if (preg_match('/^Mesa\s+(\d+)$/i', trim($mesa->nombre), $matches)) {
+                        $num = (int)$matches[1];
+                        if ($num >= $nextMesaNum) {
+                            $nextMesaNum = $num + 1;
+                        }
+                    }
+                }
+            @endphp
             <div>
-                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Identificador o Número</label>
-                <input name="nombre" required type="text" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Ej. VIP 02, Terraza 5">
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Identificador o Número (opcional)</label>
+                <input name="nombre" type="text" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Ej. Mesa {{ $nextMesaNum }} (Dejar vacío para usar este por defecto)">
             </div>
             <div>
                 <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Capacidad Max. Pax</label>
@@ -124,8 +136,14 @@
         const cards = document.querySelectorAll('.mesa-card-item');
         const filterButtons = document.querySelectorAll('#mesas-filters button');
 
+        // Rebind search input
+        const cleanSearch = searchInput.cloneNode(true);
+        // Copy value over to the clone to preserve user typing
+        cleanSearch.value = searchInput.value;
+        searchInput.parentNode.replaceChild(cleanSearch, searchInput);
+        
         function filterList() {
-            const query = searchInput.value.toLowerCase().trim();
+            const query = cleanSearch.value.toLowerCase().trim();
             cards.forEach(card => {
                 const status = card.getAttribute('data-status') || '';
                 const nombre = card.getAttribute('data-nombre') || '';
@@ -140,9 +158,6 @@
             });
         }
 
-        // Rebind search input
-        const cleanSearch = searchInput.cloneNode(true);
-        searchInput.parentNode.replaceChild(cleanSearch, searchInput);
         cleanSearch.addEventListener('input', filterList);
 
         // Rebind buttons
