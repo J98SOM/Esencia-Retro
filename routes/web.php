@@ -284,14 +284,21 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $productsInput[$singleProductId] = $singleQty;
         }
         
+        $productIds = array_keys($productsInput);
+        $productos = \App\Models\Producto::whereIn('id', $productIds)->get()->keyBy('id');
+        
+        $existingItems = \App\Models\ProductoXFactura::where('factura_id', $factura->id)
+            ->whereIn('producto_id', $productIds)
+            ->get()->keyBy('producto_id');
+            
         foreach ($productsInput as $prodId => $qty) {
             $qty = intval($qty);
             if ($qty <= 0) continue;
             
-            $producto = Producto::find($prodId);
+            $producto = $productos->get($prodId);
             if (!$producto) continue;
             
-            $pxf = ProductoXFactura::where('factura_id', $factura->id)->where('producto_id', $producto->id)->first();
+            $pxf = $existingItems->get($prodId);
             if ($pxf) {
                 $pxf->cantidad += $qty;
                 $pxf->save();

@@ -99,6 +99,10 @@ class AlquilerController extends Controller
                     // ignore and assume nullable
                 }
 
+                $hasDescripcion = Schema::hasColumn('productosxfactura', 'descripcion');
+
+                $insertData = [];
+                $now = now();
                 foreach ($invoice['items'] as $it) {
                     // If frontend doesn't provide producto_id, skip or fallback
                     $data = [
@@ -106,6 +110,8 @@ class AlquilerController extends Controller
                         'factura_id' => $factura->id,
                         'cantidad' => $it['cant'] ?? ($it['cantidad'] ?? 0),
                         'precio_unitario' => $it['precio'] ?? ($it['precio_unitario'] ?? 0),
+                        'created_at' => $now,
+                        'updated_at' => $now,
                     ];
                     // Normalize producto_id: treat empty string or non-numeric as null
                     if (array_key_exists('producto_id', $it)) {
@@ -122,11 +128,15 @@ class AlquilerController extends Controller
                     // we will store NULL so that manually-entered descriptions do not
                     // get associated to an arbitrary product.
                     // Add descripcion only if the column exists in the schema
-                    if (Schema::hasColumn('productosxfactura', 'descripcion')) {
+                    if ($hasDescripcion) {
                         $data['descripcion'] = $it['desc'] ?? ($it['descripcion'] ?? null);
                     }
-                    $created = ProductoXFactura::create($data);
-                    Log::info('ProductoXFactura created', ['id' => $created->id, 'data' => $created->toArray()]);
+                    $insertData[] = $data;
+                }
+                
+                if (!empty($insertData)) {
+                    ProductoXFactura::insert($insertData);
+                    Log::info('ProductoXFactura batch inserted', ['count' => count($insertData)]);
                 }
             } else {
                 Log::info('AlquilerController: no items found in payload');
@@ -134,13 +144,19 @@ class AlquilerController extends Controller
 
             // Metodos de pago
             if (! empty($invoice['metodos']) && is_array($invoice['metodos'])) {
+                $now = now();
+                $metodosData = [];
                 foreach ($invoice['metodos'] as $mp) {
-                    MetodoPago::create([
+                    $metodosData[] = [
                         'factura_id' => $factura->id,
                         'metodo' => $mp['metodo'] ?? null,
-                        // Some DB schemas may not allow NULL here; fallback to 0
                         'valor' => isset($mp['valor']) ? $mp['valor'] : 0,
-                    ]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                if (!empty($metodosData)) {
+                    MetodoPago::insert($metodosData);
                 }
             } else {
                 // fallback: use single medio_pago field — save only the method, valor=NULL
@@ -296,12 +312,16 @@ class AlquilerController extends Controller
                     // ignore and assume nullable
                 }
 
+                $insertData = [];
+                $now = now();
                 foreach ($invoice['items'] as $it) {
                     $data = [
                         'producto_id' => $it['producto_id'] ?? null,
                         'factura_id' => $factura->id,
                         'cantidad' => $it['cant'] ?? ($it['cantidad'] ?? 0),
                         'precio_unitario' => $it['precio'] ?? ($it['precio_unitario'] ?? 0),
+                        'created_at' => $now,
+                        'updated_at' => $now,
                     ];
                     // Normalize producto_id: treat empty string or non-numeric as null
                     if (array_key_exists('producto_id', $it)) {
@@ -318,19 +338,29 @@ class AlquilerController extends Controller
                     if ($hasDescripcion) {
                         $data['descripcion'] = $it['desc'] ?? ($it['descripcion'] ?? null);
                     }
-                    ProductoXFactura::create($data);
+                    $insertData[] = $data;
+                }
+                if (!empty($insertData)) {
+                    ProductoXFactura::insert($insertData);
                 }
             }
 
             // Recreate metodos
             MetodoPago::where('factura_id', $factura->id)->delete();
             if (! empty($invoice['metodos']) && is_array($invoice['metodos'])) {
+                $now = now();
+                $metodosData = [];
                 foreach ($invoice['metodos'] as $mp) {
-                    MetodoPago::create([
+                    $metodosData[] = [
                         'factura_id' => $factura->id,
                         'metodo' => $mp['metodo'] ?? null,
                         'valor' => isset($mp['valor']) ? $mp['valor'] : 0,
-                    ]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                if (!empty($metodosData)) {
+                    MetodoPago::insert($metodosData);
                 }
             } else {
                 if (! empty($invoice['medio_pago'])) {

@@ -123,24 +123,36 @@ class CajaController extends Controller
             ProductoXFactura::where('factura_id', $factura->id)->delete();
             if (! empty($invoice['items']) && is_array($invoice['items'])) {
                 $hasDescripcion = Schema::hasColumn('productosxfactura', 'descripcion');
+                $insertData = [];
+                $now = now();
                 foreach ($invoice['items'] as $it) {
                     $data = [
                         'producto_id' => $it['producto_id'] ?? null,
                         'factura_id' => $factura->id,
                         'cantidad' => $it['cant'] ?? ($it['cantidad'] ?? 0),
                         'precio_unitario' => $it['precio'] ?? ($it['precio_unitario'] ?? 0),
+                        'created_at' => $now,
+                        'updated_at' => $now,
                     ];
                     if ($hasDescripcion) {
                         $data['descripcion'] = $it['desc'] ?? ($it['descripcion'] ?? null);
                     }
-                    ProductoXFactura::create($data);
+                    $insertData[] = $data;
+                }
+                if (!empty($insertData)) {
+                    ProductoXFactura::insert($insertData);
                 }
             }
 
             MetodoPago::where('factura_id', $factura->id)->delete();
             if (! empty($invoice['metodos']) && is_array($invoice['metodos'])) {
+                $metodosData = [];
+                $now = now();
                 foreach ($invoice['metodos'] as $mp) {
-                    MetodoPago::create(['factura_id' => $factura->id, 'metodo' => $mp['metodo'] ?? null, 'valor' => $mp['valor'] ?? 0]);
+                    $metodosData[] = ['factura_id' => $factura->id, 'metodo' => $mp['metodo'] ?? null, 'valor' => $mp['valor'] ?? 0, 'created_at' => $now, 'updated_at' => $now];
+                }
+                if (!empty($metodosData)) {
+                    MetodoPago::insert($metodosData);
                 }
             } elseif (! empty($invoice['medio_pago'])) {
                 MetodoPago::create(['factura_id' => $factura->id, 'metodo' => $invoice['medio_pago'], 'valor' => $invoice['total'] ?? 0]);
@@ -224,25 +236,37 @@ class CajaController extends Controller
             ProductoXFactura::where('factura_id', $factura->id)->delete();
             if (! empty($invoice['items']) && is_array($invoice['items'])) {
                 $hasDescripcion = Schema::hasColumn('productosxfactura', 'descripcion');
+                $insertData = [];
+                $now = now();
                 foreach ($invoice['items'] as $it) {
                     $data = [
                         'producto_id' => $it['producto_id'] ?? null,
                         'factura_id' => $factura->id,
                         'cantidad' => $it['cant'] ?? ($it['cantidad'] ?? 0),
                         'precio_unitario' => $it['precio'] ?? ($it['precio_unitario'] ?? 0),
+                        'created_at' => $now,
+                        'updated_at' => $now,
                     ];
                     if ($hasDescripcion) {
                         $data['descripcion'] = $it['desc'] ?? ($it['descripcion'] ?? null);
                     }
-                    ProductoXFactura::create($data);
+                    $insertData[] = $data;
+                }
+                if (!empty($insertData)) {
+                    ProductoXFactura::insert($insertData);
                 }
             }
 
             // Recreate metodos
             MetodoPago::where('factura_id', $factura->id)->delete();
             if (! empty($invoice['metodos']) && is_array($invoice['metodos'])) {
+                $metodosData = [];
+                $now = now();
                 foreach ($invoice['metodos'] as $mp) {
-                    MetodoPago::create(['factura_id' => $factura->id, 'metodo' => $mp['metodo'] ?? null, 'valor' => $mp['valor'] ?? 0]);
+                    $metodosData[] = ['factura_id' => $factura->id, 'metodo' => $mp['metodo'] ?? null, 'valor' => $mp['valor'] ?? 0, 'created_at' => $now, 'updated_at' => $now];
+                }
+                if (!empty($metodosData)) {
+                    MetodoPago::insert($metodosData);
                 }
             } elseif (! empty($invoice['medio_pago'])) {
                 MetodoPago::create(['factura_id' => $factura->id, 'metodo' => $invoice['medio_pago'], 'valor' => $invoice['total'] ?? 0]);
