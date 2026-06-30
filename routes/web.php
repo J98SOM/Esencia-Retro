@@ -595,7 +595,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     })->name('alquiler');
 
     Route::get('/alquiler/{id}/edit', function ($id) {
-        if (auth()->user()->rol && auth()->user()->rol->name === 'cocina') {
+        if (auth()->user()?->rol?->name === 'cocina') {
             abort(403, 'Acción no autorizada.');
         }
         $max = DB::table('facturas')->where('tipo', 'evento')->select(DB::raw('MAX(CAST(numero_orden AS UNSIGNED)) as max'))->value('max');
@@ -646,7 +646,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/alquiler/update', [AlquilerController::class, 'update'])->name('alquiler.update');
 
     Route::delete('/alquiler/{id}', function ($id) {
-        if (auth()->user()->rol && auth()->user()->rol->name === 'cocina') {
+        if (auth()->user()?->rol?->name === 'cocina') {
             abort(403, 'Acción no autorizada.');
         }
         ProductoXFactura::where('factura_id', $id)->delete();
