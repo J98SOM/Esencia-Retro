@@ -232,6 +232,26 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     })->name('mesas.delete');
 
     // Pedidos & Mesas Interaction (No endpoints)
+    $renderPedidoHtml = function($mesaId) {
+        $mesa = \App\Models\Mesa::with(['latestFactura.productos.producto'])->findOrFail($mesaId);
+        $factura = $mesa->latestFactura;
+        
+        $items = [];
+        $total = 0;
+        if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
+            $items = $factura->productos;
+            $total = $factura->monto_total;
+        }
+
+        return view('pedido.index', [
+            'mesa' => $mesa,
+            'mesaId' => $mesaId,
+            'factura' => $factura,
+            'items' => $items,
+            'total' => $total,
+        ])->render();
+    };
+
     Route::get('/mesas/{id}/pedido', function ($id) {
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
@@ -252,7 +272,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         ]);
     })->name('pedido');
 
-    Route::post('/mesas/{id}/pedido/add', function (Request $request, $id) {
+    Route::post('/mesas/{id}/pedido/add', function (Request $request, $id) use ($renderPedidoHtml) {
         $mesa = Mesa::findOrFail($id);
         
         $factura = $mesa->latestFactura;
@@ -318,17 +338,20 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             }
         }
         
-        $factura->monto_total = $factura->productos->sum(function($item) {
-            return $item->cantidad * $item->precio_unitario;
-        });
+        $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
         $factura->save();
         
-        event(new \App\Events\PedidoActualizado($id));
+        dispatch(function() use ($id) {
+            event(new \App\Events\PedidoActualizado($id));
+        })->afterResponse();
         
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $renderPedidoHtml($id), 'message' => 'Pedido actualizado.']);
+        }
         return redirect()->route('admin.pedido', ['id' => $id])->with('success', 'Pedido actualizado.');
     })->name('pedido.add');
 
-    Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function ($mesaId, $itemId) {
+    Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function ($mesaId, $itemId) use ($renderPedidoHtml) {
         $item = ProductoXFactura::findOrFail($itemId);
         $factura = $item->factura;
         $item->delete();
@@ -336,18 +359,21 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         if ($factura->productos()->count() == 0) {
             $factura->delete();
         } else {
-            $factura->monto_total = $factura->productos->sum(function($it) {
-                return $it->cantidad * $it->precio_unitario;
-            });
+            $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
             $factura->save();
         }
         
-        event(new \App\Events\PedidoActualizado($mesaId));
+        dispatch(function() use ($mesaId) {
+            event(new \App\Events\PedidoActualizado($mesaId));
+        })->afterResponse();
         
+        if (request()->ajax()) {
+            return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Producto eliminado.']);
+        }
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
     })->name('pedido.delete_item');
 
-    Route::post('/mesas/{mesaId}/pedido/item/{itemId}/update', function (Request $request, $mesaId, $itemId) {
+    Route::post('/mesas/{mesaId}/pedido/item/{itemId}/update', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
         $item = ProductoXFactura::findOrFail($itemId);
         $factura = $item->factura;
         $cantidad = intval($request->input('cantidad', 1));
@@ -357,24 +383,30 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             if ($factura->productos()->count() == 0) {
                 $factura->delete();
             } else {
-                $factura->monto_total = $factura->productos->sum(function($it) {
-                    return $it->cantidad * $it->precio_unitario;
-                });
+                $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
                 $factura->save();
             }
-            event(new \App\Events\PedidoActualizado($mesaId));
+            dispatch(function() use ($mesaId) {
+                event(new \App\Events\PedidoActualizado($mesaId));
+            })->afterResponse();
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Producto eliminado.']);
+            }
             return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
         }
         
         $item->cantidad = $cantidad;
         $item->save();
         
-        $factura->monto_total = $factura->productos->sum(function($it) {
-            return $it->cantidad * $it->precio_unitario;
-        });
+        $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
         $factura->save();
         
-        event(new \App\Events\PedidoActualizado($mesaId));
+        dispatch(function() use ($mesaId) {
+            event(new \App\Events\PedidoActualizado($mesaId));
+        })->afterResponse();
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Cantidad actualizada.']);
+        }
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Cantidad actualizada.');
     })->name('pedido.update_item');
 

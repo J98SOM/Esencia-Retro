@@ -8,7 +8,7 @@
 @endphp
 <div class="p-8 flex-1">
     <!-- Header Section -->
-    <header class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-10">
+    <header id="pedido-header" class="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-10">
         <div>
             <nav class="flex items-center space-x-2 text-xs text-on-surface-variant mb-2">
                 <span>Gestión</span>
@@ -55,7 +55,7 @@
                 </button>
             </div>
             
-            <div class="flex-1 overflow-auto space-y-4">
+            <div id="pedido-grid" class="flex-1 overflow-auto space-y-4">
                 @forelse($items as $item)
                     @php
                         $prod = $item->producto;
@@ -65,7 +65,7 @@
                         <div class="flex items-center gap-4">
                             <form action="{{ route('admin.pedido.update_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline-flex items-center">
                                 @csrf
-                                <input type="number" name="cantidad" value="{{ intval($item->cantidad) }}" min="0" onchange="this.form.submit()" class="w-16 h-12 rounded-lg bg-surface-container-low border border-white/10 text-white text-lg font-bold text-center focus:outline-none focus:border-primary transition-colors">
+                                <input type="number" name="cantidad" value="{{ intval($item->cantidad) }}" min="0" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()" class="w-16 h-12 rounded-lg bg-surface-container-low border border-white/10 text-white text-lg font-bold text-center focus:outline-none focus:border-primary transition-colors">
                                 <span class="text-white font-bold ml-2 mr-1 text-lg">x</span>
                             </form>
                             <div>
@@ -93,7 +93,7 @@
         @if(!$isMesero)
         <!-- Order Summary (Right Side) -->
         <aside class="flex flex-col gap-6">
-            <div class="bg-surface-container-low rounded-2xl p-8 border border-white/5 group">
+            <div id="pedido-summary" class="bg-surface-container-low rounded-2xl p-8 border border-white/5 group">
                 <h4 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary">receipt_long</span>
                     Resumen
@@ -130,33 +130,103 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // DOM Updates from pre-rendered HTML
+        function updateDOMFromHtml(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['pedido-header', 'pedido-grid', 'pedido-summary'];
+            ids.forEach(id => {
+                const newEl = doc.getElementById(id);
+                const currentEl = document.getElementById(id);
+                if (newEl && currentEl) {
+                    currentEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        }
+
+        // UI Partial Refresh Helper Function (Fallback & Real-time)
+        function refreshPedidoUI() {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    updateDOMFromHtml(html);
+                })
+                .catch(err => console.error('Error al refrescar la interfaz del pedido:', err));
+        }
+
+        // Echo listener for real-time updates from other clients
         if (window.Echo) {
             window.Echo.channel('pedidos-canal')
                 .listen('.pedido.actualizado', (e) => {
                     console.log('Pedido actualizado recibido en detalle de pedido:', e);
-                    // Only refresh if the event corresponds to this table
                     if (String(e.mesaId) === String('{{ $mesaId }}')) {
-                        fetch(window.location.href)
-                            .then(response => response.text())
-                            .then(html => {
-                                const parser = new DOMParser();
-                                const doc = parser.parseFromString(html, 'text/html');
-                                
-                                const newHeader = doc.getElementById('pedido-header');
-                                const currentHeader = document.getElementById('pedido-header');
-                                if (newHeader && currentHeader) {
-                                    currentHeader.innerHTML = newHeader.innerHTML;
-                                }
-
-                                const newGrid = doc.getElementById('pedido-grid');
-                                const currentGrid = document.getElementById('pedido-grid');
-                                if (newGrid && currentGrid) {
-                                    currentGrid.innerHTML = newGrid.innerHTML;
-                                }
-                            })
-                            .catch(err => console.error('Error al actualizar detalle de pedido:', err));
+                        refreshPedidoUI();
                     }
                 });
+        }
+
+        // AJAX submit interceptor for Global Add Products Form
+        const addProductsForm = document.getElementById('add-products-form');
+        if (addProductsForm) {
+            addProductsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        closeModals();
+                        // Reset all input quantity fields in the menu modal to 0
+                        addProductsForm.querySelectorAll('input[type="number"]').forEach(input => input.value = 0);
+                        if (data.html) {
+                            updateDOMFromHtml(data.html);
+                        } else {
+                            refreshPedidoUI();
+                        }
+                    }
+                })
+                .catch(err => console.error('Error al añadir productos:', err));
+            });
+        }
+
+        // Intercept all submit actions on items grid (Delete / Update quantities)
+        const pedidoGrid = document.getElementById('pedido-grid');
+        if (pedidoGrid) {
+            pedidoGrid.addEventListener('submit', function(e) {
+                const form = e.target;
+                // Only intercept POST/DELETE forms inside the grid
+                if (form && form.tagName === 'FORM') {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(form);
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.html) {
+                                updateDOMFromHtml(data.html);
+                            } else {
+                                refreshPedidoUI();
+                            }
+                        }
+                    })
+                    .catch(err => console.error('Error al actualizar ítem:', err));
+                }
+            });
         }
     });
 </script>
