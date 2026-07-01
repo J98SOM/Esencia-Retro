@@ -363,7 +363,7 @@
                 const mesaNombre = '{{ $mesa->nombre ?? "POS" }}';
                 
                 @php
-                    $logoPath = public_path('img/logo.png');
+                    $logoPath = public_path('img/logo-bw.png');
                     $logoBase64 = '';
                     if (file_exists($logoPath)) {
                         $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
@@ -419,12 +419,12 @@
     <title>Ticket #${orderNumber}</title>
     <style>
         @page { margin: 0; padding: 0; }
-        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; margin: 0 auto; padding: 10px; width: 300px; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 10px; color: #000; margin: 0 auto; padding: 5px; width: 200px; }
         .text-center { text-align: center; } .text-right { text-align: right; } .text-left { text-align: left; }
         .font-bold { font-weight: bold; } .uppercase { text-transform: uppercase; }
         .mb-1 { margin-bottom: 5px; } .mb-2 { margin-bottom: 10px; } .mt-2 { margin-top: 10px; }
         .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
-        .logo { width: 180px; margin: 0 auto -15px; display: block; filter: grayscale(100%); }
+        .logo { max-width: 170px; width: 100%; height: auto; margin: -10px auto -10px auto; display: block; object-fit: contain; }
         table { width: 100%; border-collapse: collapse; }
         table th, table td { padding: 2px 0; vertical-align: top; }
         .col-qty { width: 15%; } .col-desc { width: 55%; } .col-total { width: 30%; text-align: right; }
@@ -436,7 +436,7 @@
         <div class="font-bold uppercase">ESENCIA RETRO</div>
         <div>NIT: 1,007,450,540</div>
         <div>Tel: 3162218491 - 3209180085</div>
-        <div>Ciudad Bogotá</div>
+        <div>Ciudad Soacha San Mateo</div>
         <div>Correo: esenciaretro10@gmail.com</div>
     </div>
     <div class="divider"></div>
