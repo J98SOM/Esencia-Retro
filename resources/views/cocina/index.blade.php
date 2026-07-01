@@ -4,9 +4,16 @@
 
 @section('content')
 <div class="p-8 max-w-[1600px] mx-auto">
-    <div class="mb-8">
-        <h1 class="text-3xl font-black text-white tracking-tight mb-2">Cocina — Pedidos</h1>
-        <p class="text-sm text-slate-400 font-medium">Gestiona la preparación de cada producto por mesa.</p>
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-white tracking-tight mb-2">Cocina — Pedidos</h1>
+            <p class="text-sm text-slate-400 font-medium">Gestiona la preparación de cada producto por mesa.</p>
+        </div>
+        <div>
+            <button onclick="if(typeof window.playNotificationSound === 'function') { window.playNotificationSound(); }" class="px-5 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-wider shadow-sm">
+                <span class="material-symbols-outlined text-base">volume_up</span> Probar Sonido
+            </button>
+        </div>
     </div>
 
     @if(session('success'))
