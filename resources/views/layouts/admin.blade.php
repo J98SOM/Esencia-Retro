@@ -345,6 +345,44 @@
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) closeModals();
         });
+
+        // Play a nice retro double chime notification using Web Audio API
+        let audioCtxInstance = null;
+        window.playNotificationSound = function() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                if (!audioCtxInstance) {
+                    audioCtxInstance = new AudioContext();
+                }
+                if (audioCtxInstance.state === 'suspended') {
+                    audioCtxInstance.resume();
+                }
+                
+                function playTone(freq, startTime, duration) {
+                    const osc = audioCtxInstance.createOscillator();
+                    const gainNode = audioCtxInstance.createGain();
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtxInstance.destination);
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    
+                    gainNode.gain.setValueAtTime(0.15, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                }
+                
+                const now = audioCtxInstance.currentTime;
+                playTone(587.33, now, 0.25); // D5
+                playTone(880.00, now + 0.12, 0.35); // A5
+            } catch (e) {
+                console.warn('AudioContext failed:', e);
+            }
+        };
     </script>
     <!-- Removed redundant client-side API/roles scripts -->
     @stack('scripts')

@@ -362,6 +362,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
                 });
                 $factura->save();
             }
+            event(new \App\Events\PedidoActualizado($mesaId));
             return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
         }
         
@@ -373,6 +374,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         });
         $factura->save();
         
+        event(new \App\Events\PedidoActualizado($mesaId));
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Cantidad actualizada.');
     })->name('pedido.update_item');
 

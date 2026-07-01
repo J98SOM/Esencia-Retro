@@ -188,6 +188,9 @@
             window.Echo.channel('pedidos-canal')
                 .listen('.pedido.actualizado', (e) => {
                     console.log('Pedido actualizado recibido en mesas:', e);
+                    if (typeof window.playNotificationSound === 'function') {
+                        window.playNotificationSound();
+                    }
                     fetch(window.location.href)
                         .then(response => response.text())
                         .then(html => {

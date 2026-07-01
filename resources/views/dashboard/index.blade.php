@@ -146,10 +146,13 @@
             <script>
             (function(){
                 // Refresh dashboard dynamically on Echo updates to maintain live state without API token overhead
-                if (window.Echo) {
+                 if (window.Echo) {
                     window.Echo.channel('pedidos-canal')
                         .listen('.pedido.actualizado', (e) => {
                             console.log('Pedido actualizado recibido en dashboard:', e);
+                            if (typeof window.playNotificationSound === 'function') {
+                                window.playNotificationSound();
+                            }
                             fetch(window.location.href)
                                 .then(response => response.text())
                                 .then(html => {

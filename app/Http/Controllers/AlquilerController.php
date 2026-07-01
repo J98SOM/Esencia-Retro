@@ -181,6 +181,10 @@ class AlquilerController extends Controller
                 'source' => 'alquiler',
             ]);
 
+            if ($factura->mesa_id) {
+                event(new \App\Events\PedidoActualizado($factura->mesa_id));
+            }
+
             return response()->json([
                 'message' => 'Factura creada',
                 'factura_id' => $factura->id,
@@ -383,6 +387,10 @@ class AlquilerController extends Controller
                 'numero_orden' => $factura->numero_orden,
                 'source' => 'alquiler',
             ]);
+
+            if ($factura->mesa_id) {
+                event(new \App\Events\PedidoActualizado($factura->mesa_id));
+            }
 
             return response()->json(['message' => 'Factura actualizada', 'factura_id' => $factura->id, 'redirect' => route('admin.alquiler.list')]);
         } catch (\Throwable $e) {
