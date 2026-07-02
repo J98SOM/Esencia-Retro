@@ -127,9 +127,35 @@
     </div>
 </div>
 
+<!-- Global Loading Screen Overlay -->
+<div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div class="flex flex-col items-center gap-4 p-6 rounded-2xl bg-surface-container-high border border-white/10 shadow-2xl">
+        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-white tracking-tight">Procesando...</p>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const loader = document.getElementById('global-loader');
+        const loaderText = loader ? loader.querySelector('p') : null;
+
+        function showLoader(text = 'Procesando...') {
+            if (loader) {
+                if (loaderText) loaderText.textContent = text;
+                loader.classList.remove('opacity-0', 'pointer-events-none');
+                loader.classList.add('opacity-100');
+            }
+        }
+
+        function hideLoader() {
+            if (loader) {
+                loader.classList.remove('opacity-100');
+                loader.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
         // DOM Updates from pre-rendered HTML
         function updateDOMFromHtml(html) {
             const parser = new DOMParser();
@@ -172,6 +198,15 @@
             addProductsForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Disable submit button to prevent double submit
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                
+                // Close popup modal instantly so loader displays cleanly
+                closeModals();
+                
+                showLoader('Añadiendo productos...');
+                
                 const formData = new FormData(this);
                 fetch(this.action, {
                     method: 'POST',
@@ -183,7 +218,6 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        closeModals();
                         // Reset all input quantity fields in the menu modal to 0
                         addProductsForm.querySelectorAll('input[type="number"]').forEach(input => input.value = 0);
                         if (data.html) {
@@ -193,7 +227,11 @@
                         }
                     }
                 })
-                .catch(err => console.error('Error al añadir productos:', err));
+                .catch(err => console.error('Error al añadir productos:', err))
+                .finally(() => {
+                    hideLoader();
+                    if (submitBtn) submitBtn.disabled = false;
+                });
             });
         }
 
@@ -205,6 +243,12 @@
                 // Only intercept POST/DELETE forms inside the grid
                 if (form && form.tagName === 'FORM') {
                     e.preventDefault();
+                    
+                    // Disable submit to prevent double submit
+                    const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('input[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = true;
+                    
+                    showLoader('Actualizando pedido...');
                     
                     const formData = new FormData(form);
                     fetch(form.action, {
@@ -224,7 +268,12 @@
                             }
                         }
                     })
-                    .catch(err => console.error('Error al actualizar ítem:', err));
+                    .catch(err => console.error('Error al actualizar ítem:', err))
+                    .finally(() => {
+                        hideLoader();
+                        // (Re-enabling isn't strictly necessary if HTML replaces, but good practice)
+                        if (submitBtn) submitBtn.disabled = false;
+                    });
                 }
             });
         }
