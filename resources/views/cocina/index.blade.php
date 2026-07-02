@@ -24,125 +24,92 @@
     @endif
 
     <div id="kitchen-list" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        @forelse($orders as $o)
-            @if($o->productos->count() > 0)
-            <div class="rounded-2xl bg-surface-container-low border border-white/5 shadow-2xl overflow-hidden flex flex-col transition-all duration-300 hover:border-white/10 hover:shadow-primary/5">
-                <!-- Header: Order Info -->
-                <div class="p-6 border-b border-white/5 bg-surface-container-high/40 flex justify-between items-center">
-                    <div>
-                        <div class="flex items-center gap-3 mb-1.5">
-                            <span class="bg-primary/20 text-primary px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest">Pedido #{{ $o->id }}</span>
-                            <span class="text-xs text-slate-400 font-bold flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">schedule</span>
-                                {{ \Carbon\Carbon::parse($o->created_at ?? $o->fecha)->format('h:i A') }}
-                            </span>
-                        </div>
-                        <h2 class="text-xl font-black text-white">
-                            {{ str_contains(strtolower($o->mesa->nombre ?? ''), 'mesa') ? ($o->mesa->nombre ?? 'Sin Mesa') : 'Mesa ' . ($o->mesa->nombre ?? $o->mesa_id ?? 'Sin Mesa') }}
-                        </h2>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center shadow-inner">
-                        <span class="material-symbols-outlined text-primary">restaurant</span>
-                    </div>
-                </div>
-
-                <!-- Body: Items List -->
-                <div class="p-6 flex-1 flex flex-col gap-5">
-                    @foreach($o->productos as $p)
-                        @php
-                            $tracking = $p->estatusTracking;
-                            $status = $tracking ? strtolower($tracking->estatus) : 'pendiente';
-                            
-                            $statusColor = 'text-amber-400 bg-amber-400/10 border-amber-400/20'; // Pendiente
-                            $statusBorder = 'border-l-4 border-l-amber-500/80';
-                            $statusIcon = 'schedule';
-                            if ($status === 'en preparacion') {
-                                $statusColor = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
-                                $statusBorder = 'border-l-4 border-l-cyan-500/80';
-                                $statusIcon = 'skillet';
-                            } elseif ($status === 'entregado') {
-                                $statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-                                $statusBorder = 'border-l-4 border-l-emerald-500/80';
-                                $statusIcon = 'check_circle';
-                            }
-                        @endphp
-                        
-                        <div class="flex flex-col gap-4 p-5 rounded-xl bg-surface-container-lowest border-y border-r border-white/5 shadow-md transition-all duration-300 {{ $statusBorder }}">
-                            <!-- Item Info & Current Status -->
-                            <div class="flex justify-between items-center gap-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center font-black text-sm text-primary shadow-inner">
-                                        {{ intval($p->cantidad) }}x
-                                    </div>
-                                    <span class="font-bold text-white text-base tracking-tight">{{ $p->producto->nombre ?? $p->descripcion }}</span>
-                                </div>
-                                <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest {{ $statusColor }}">
-                                    <span class="material-symbols-outlined text-[12px]">{{ $statusIcon }}</span>
-                                    {{ $status }}
-                                </div>
-                            </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="flex gap-2 pt-3 border-t border-white/5">
-                                @if($status !== 'en preparacion' && $status !== 'entregado')
-                                <form method="POST" action="{{ route('admin.cocina.item.status', ['id' => $p->id]) }}" class="flex-1">
-                                    @csrf
-                                    <input type="hidden" name="estatus" value="en preparacion">
-                                    <button type="submit" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-on-primary transition-all hover:scale-[1.02] active:scale-[0.98] text-xs font-bold shadow-sm">
-                                        <span class="material-symbols-outlined text-[16px]">skillet</span> Preparar
-                                    </button>
-                                </form>
-                                @endif
-                                
-                                @if($status !== 'entregado')
-                                <form method="POST" action="{{ route('admin.cocina.item.status', ['id' => $p->id]) }}" class="flex-1">
-                                    @csrf
-                                    <input type="hidden" name="estatus" value="entregado">
-                                    <button type="submit" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-on-primary transition-all hover:scale-[1.02] active:scale-[0.98] text-xs font-bold shadow-sm">
-                                        <span class="material-symbols-outlined text-[16px]">done_all</span> Entregado
-                                    </button>
-                                </form>
-                                @endif
-                                
-                                @if($status === 'entregado')
-                                <div class="flex-1 text-center py-2.5 text-xs font-bold text-slate-500 bg-white/5 rounded-lg border border-white/5 select-none">
-                                    Completado
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-        @empty
-            <div class="col-span-full py-12 flex flex-col items-center justify-center glass-card rounded-2xl border border-white/5">
-                <span class="material-symbols-outlined text-6xl text-slate-600 mb-4">restaurant</span>
-                <p class="text-lg text-slate-400 font-medium">No hay pedidos pendientes en cocina.</p>
-            </div>
-        @endforelse
+        @include('cocina.partials.list')
     </div>
 </div>
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // Beautiful dark-themed toast notification system
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container') || (() => {
+                const container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none';
+                document.body.appendChild(container);
+                return container;
+            })();
+
+            const toast = document.createElement('div');
+            toast.className = 'transform translate-y-4 opacity-0 transition-all duration-300 pointer-events-auto bg-surface-container-high/90 border border-white/10 rounded-2xl p-4 shadow-2xl flex items-center gap-3 backdrop-blur-md';
+            
+            let icon = 'notifications';
+            let iconColor = 'text-primary';
+            if (type === 'error') {
+                icon = 'error';
+                iconColor = 'text-error';
+            } else if (type === 'success') {
+                icon = 'check_circle';
+                iconColor = 'text-emerald-400';
+            } else if (type === 'info') {
+                icon = 'info';
+                iconColor = 'text-sky-400';
+            }
+            
+            toast.innerHTML = `
+                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 ${iconColor}">
+                    <span class="material-symbols-outlined">${icon}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-white tracking-tight">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            });
+            
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
         if (window.Echo) {
             window.Echo.channel('pedidos-canal')
                 .listen('.pedido.actualizado', (e) => {
                     console.log('Pedido actualizado recibido en cocina:', e);
+                    
+                    // Play sound chime instantly
                     if (typeof window.playNotificationSound === 'function') {
                         window.playNotificationSound();
                     }
-                    fetch(window.location.href)
+                    
+                    // Show a toast message to notify what changed
+                    if (e.message) {
+                        const alertType = e.tipoCambio === 'eliminado' ? 'error' : 'success';
+                        showToast(e.message, alertType);
+                    } else {
+                        showToast('Pedido actualizado en cocina', 'info');
+                    }
+                    
+                    // Fetch the updated DOM (only the partial list content)
+                    fetch(window.location.pathname + '?partial=1')
                         .then(response => response.text())
                         .then(html => {
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(html, 'text/html');
-                            const newList = doc.getElementById('kitchen-list');
                             const currentList = document.getElementById('kitchen-list');
-                            if (newList && currentList) {
-                                currentList.innerHTML = newList.innerHTML;
+                            if (currentList) {
+                                currentList.innerHTML = html;
                             }
                         })
                         .catch(err => console.error('Error al actualizar cocina:', err));

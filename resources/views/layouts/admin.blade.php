@@ -245,7 +245,6 @@
 
     </div>
     
-    @stack('scripts')
     <script>
         const modalOverlay = document.getElementById('modal-overlay');
 

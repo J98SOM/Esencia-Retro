@@ -341,8 +341,25 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
         $factura->save();
         
-        dispatch(function() use ($id) {
-            event(new \App\Events\PedidoActualizado($id));
+        $mesa = Mesa::find($id);
+        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $id;
+
+        // Build detailed list of added items for toast notification
+        $addedDetails = [];
+        foreach ($productsInput as $prodId => $qty) {
+            $qty = intval($qty);
+            if ($qty <= 0) continue;
+            $producto = $productos->get($prodId);
+            if ($producto) {
+                $addedDetails[] = "{$qty}x {$producto->nombre}";
+            }
+        }
+        $addedString = !empty($addedDetails) ? implode(', ', $addedDetails) : 'productos';
+        $eventMessage = "Se agregó {$addedString} en {$mesaNombre}";
+        
+        session()->save();
+        dispatch(function() use ($id, $eventMessage) {
+            event(new \App\Events\PedidoActualizado($id, $eventMessage, "creado"));
         })->afterResponse();
         
         if ($request->ajax()) {
@@ -353,6 +370,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function ($mesaId, $itemId) use ($renderPedidoHtml) {
         $item = ProductoXFactura::findOrFail($itemId);
+        $prodNombre = $item->producto ? $item->producto->nombre : ($item->descripcion ?? 'Producto');
         $factura = $item->factura;
         $item->delete();
         
@@ -363,8 +381,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $factura->save();
         }
         
-        dispatch(function() use ($mesaId) {
-            event(new \App\Events\PedidoActualizado($mesaId));
+        $mesa = Mesa::find($mesaId);
+        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $mesaId;
+        $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
+        
+        session()->save();
+        dispatch(function() use ($mesaId, $eventMessage) {
+            event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "eliminado"));
         })->afterResponse();
         
         if (request()->ajax()) {
@@ -375,8 +398,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::post('/mesas/{mesaId}/pedido/item/{itemId}/update', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
         $item = ProductoXFactura::findOrFail($itemId);
+        $prodNombre = $item->producto ? $item->producto->nombre : ($item->descripcion ?? 'Producto');
         $factura = $item->factura;
         $cantidad = intval($request->input('cantidad', 1));
+        
+        $mesa = Mesa::find($mesaId);
+        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $mesaId;
         
         if ($cantidad <= 0) {
             $item->delete();
@@ -386,8 +413,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
                 $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
                 $factura->save();
             }
-            dispatch(function() use ($mesaId) {
-                event(new \App\Events\PedidoActualizado($mesaId));
+            $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
+            session()->save();
+            dispatch(function() use ($mesaId, $eventMessage) {
+                event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "eliminado"));
             })->afterResponse();
             if ($request->ajax()) {
                 return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Producto eliminado.']);
@@ -401,8 +430,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
         $factura->save();
         
-        dispatch(function() use ($mesaId) {
-            event(new \App\Events\PedidoActualizado($mesaId));
+        $eventMessage = "{$prodNombre} cambiado a {$cantidad}x en {$mesaNombre}";
+        session()->save();
+        dispatch(function() use ($mesaId, $eventMessage) {
+            event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "actualizado"));
         })->afterResponse();
         if ($request->ajax()) {
             return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Cantidad actualizada.']);
@@ -690,11 +721,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     })->name('alquiler.delete');
 
     // Cocina (Web)
-    Route::get('/cocina', function () {
+    Route::get('/cocina', function (Request $request) {
         $orders = Factura::with(['productos.producto', 'productos.estatusTracking', 'mesa'])
             ->whereNotIn(DB::raw('LOWER(estatus)'), ['pagado', 'pagada'])
             ->orderBy('id', 'desc')
             ->get();
+        if ($request->ajax() || $request->has('partial')) {
+            return view('cocina.partials.list', compact('orders'));
+        }
         return view('cocina.index', compact('orders'));
     })->name('cocina');
 

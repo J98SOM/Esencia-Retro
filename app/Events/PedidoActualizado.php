@@ -13,13 +13,17 @@ class PedidoActualizado implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $mesaId;
+    public $message;
+    public $tipoCambio;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($mesaId)
+    public function __construct($mesaId, $message = null, $tipoCambio = 'actualizado')
     {
         $this->mesaId = $mesaId;
+        $this->message = $message;
+        $this->tipoCambio = $tipoCambio;
     }
 
     /**
@@ -31,6 +35,18 @@ class PedidoActualizado implements ShouldBroadcastNow
     {
         return [
             new Channel('pedidos-canal'),
+        ];
+    }
+
+    /**
+     * Get the data to broadcast.
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'mesaId' => $this->mesaId,
+            'message' => $this->message,
+            'tipoCambio' => $this->tipoCambio,
         ];
     }
 
