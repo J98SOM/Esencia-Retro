@@ -120,7 +120,7 @@ class CajaController extends Controller
                 ]);
             }
 
-            ProductoXFactura::where('factura_id', $factura->id)->delete();
+            ProductoXFactura::where('factura_id', $factura->id)->get()->each->delete();
             if (! empty($invoice['items']) && is_array($invoice['items'])) {
                 $hasDescripcion = Schema::hasColumn('productosxfactura', 'descripcion');
                 $insertData = [];
@@ -140,7 +140,9 @@ class CajaController extends Controller
                     $insertData[] = $data;
                 }
                 if (!empty($insertData)) {
-                    ProductoXFactura::insert($insertData);
+                    foreach ($insertData as $data) {
+                        ProductoXFactura::create($data);
+                    }
                 }
             }
 
@@ -233,7 +235,7 @@ class CajaController extends Controller
             ]);
 
             // Recreate items
-            ProductoXFactura::where('factura_id', $factura->id)->delete();
+            ProductoXFactura::where('factura_id', $factura->id)->get()->each->delete();
             if (! empty($invoice['items']) && is_array($invoice['items'])) {
                 $hasDescripcion = Schema::hasColumn('productosxfactura', 'descripcion');
                 $insertData = [];
@@ -253,7 +255,9 @@ class CajaController extends Controller
                     $insertData[] = $data;
                 }
                 if (!empty($insertData)) {
-                    ProductoXFactura::insert($insertData);
+                    foreach ($insertData as $data) {
+                        ProductoXFactura::create($data);
+                    }
                 }
             }
 

@@ -87,7 +87,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-right flex justify-end gap-2">
-                                    <button onclick="openEditModal({{ $i->id }}, '{{ addslashes($i->nombre) }}', {{ $i->stock_inicial }}, {{ $i->stock_minimo }}, '{{ $i->unidad_medida }}', {{ $i->descuento_inventario }})"
+                                    <button onclick="openEditModal({{ $i->id }}, '{{ addslashes($i->nombre) }}', {{ $i->stock_inicial }}, {{ $i->stock_minimo }}, '{{ $i->unidad_medida }}', {{ $i->descuento_inventario }}, {{ $i->producto_id ?? 'null' }})"
                                         class="text-xs font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-all">Actualizar</button>
                                     <form method="POST" action="{{ route('admin.inventario.delete', ['id' => $i->id]) }}" onsubmit="return confirm('¿Eliminar insumo?')">
                                         @csrf
@@ -167,7 +167,16 @@
                 <input type="number" name="stock_minimo" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="0.00" required>
             </div>
             <div>
-                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Descuento Inventario (%)</label>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Producto Vinculado (Opcional)</label>
+                <select name="producto_id" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer">
+                    <option value="">-- Ninguno --</option>
+                    @foreach($productos as $prod)
+                        <option value="{{ $prod->id }}">{{ $prod->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Cantidad a descontar por venta</label>
                 <input type="number" step="0.01" min="0" name="descuento_inventario" value="0"
                     class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="0">
             </div>
@@ -207,7 +216,16 @@
                 </div>
             </div>
             <div>
-                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Descuento Inventario (%)</label>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Producto Vinculado (Opcional)</label>
+                <select id="edit-insumo-producto" name="producto_id" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary appearance-none">
+                    <option value="">-- Ninguno --</option>
+                    @foreach($productos as $prod)
+                        <option value="{{ $prod->id }}">{{ $prod->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Cantidad a descontar por venta</label>
                 <input id="edit-insumo-descuento" name="descuento_inventario" type="number" step="0.01" min="0" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
             </div>
             <div class="flex gap-3 pt-4 border-t border-white/10 mt-4">
@@ -236,7 +254,7 @@
         });
     });
 
-    window.openEditModal = function(id, nombre, stock, stockMin, unidad, descuento) {
+    window.openEditModal = function(id, nombre, stock, stockMin, unidad, descuento, productoId) {
         const form = document.getElementById('form-edit-insumo');
         form.action = "/admin/inventario/" + id;
         document.getElementById('edit-insumo-id').value = id;
@@ -245,6 +263,7 @@
         document.getElementById('edit-insumo-stock-min').value = stockMin;
         document.getElementById('edit-insumo-unidad').value = unidad;
         document.getElementById('edit-insumo-descuento').value = descuento;
+        document.getElementById('edit-insumo-producto').value = productoId || '';
         openModal('modal-edit-insumo');
     };
 })();

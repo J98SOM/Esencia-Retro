@@ -135,7 +135,9 @@ class AlquilerController extends Controller
                 }
                 
                 if (!empty($insertData)) {
-                    ProductoXFactura::insert($insertData);
+                    foreach ($insertData as $data) {
+                        ProductoXFactura::create($data);
+                    }
                     Log::info('ProductoXFactura batch inserted', ['count' => count($insertData)]);
                 }
             } else {
@@ -301,7 +303,7 @@ class AlquilerController extends Controller
             ]);
 
             // Recreate items (preserve fallback logic if producto_id missing)
-            ProductoXFactura::where('factura_id', $factura->id)->delete();
+            ProductoXFactura::where('factura_id', $factura->id)->get()->each->delete();
             if (! empty($invoice['items']) && is_array($invoice['items'])) {
                 $hasDescripcion = Schema::hasColumn('productosxfactura', 'descripcion');
                 // determine if producto_id allows NULL
@@ -345,7 +347,9 @@ class AlquilerController extends Controller
                     $insertData[] = $data;
                 }
                 if (!empty($insertData)) {
-                    ProductoXFactura::insert($insertData);
+                    foreach ($insertData as $data) {
+                        ProductoXFactura::create($data);
+                    }
                 }
             }
 
