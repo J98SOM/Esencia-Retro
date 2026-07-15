@@ -24,7 +24,8 @@ class AppServiceProvider extends ServiceProvider
     {
         ProductoXFactura::observe(ProductoXFacturaObserver::class);
 
-        if ($this->app->environment('production')) {
+        // Obligar a usar HTTPS en producción
+        if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
     }
