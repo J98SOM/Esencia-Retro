@@ -23,9 +23,9 @@
             <!-- Date Range Selector Form -->
             <form method="GET" action="{{ route('admin.reportes') }}" id="date-range-form" class="flex items-center bg-surface-container-low rounded-xl px-4 py-2 border border-white/5 gap-2 hover:bg-white/5 transition-colors">
                 <span class="material-symbols-outlined text-primary text-sm">date_range</span>
-                <input type="date" name="fecha_inicio" value="{{ $fechaInicio }}" onchange="if(this.form.fecha_fin.value) this.form.submit()" onclick="event.stopPropagation(); this.showPicker();" class="bg-transparent border-0 p-0 text-sm font-semibold text-white focus:outline-none focus:ring-0 cursor-pointer w-28" placeholder="Desde">
+                <input type="datetime-local" name="fecha_inicio" value="{{ $fechaInicio }}" onchange="if(this.form.fecha_fin.value) this.form.submit()" onclick="event.stopPropagation(); this.showPicker();" class="bg-transparent border-0 p-0 text-sm font-semibold text-white focus:outline-none focus:ring-0 cursor-pointer w-40" placeholder="Desde">
                 <span class="text-slate-500 text-xs font-bold">a</span>
-                <input type="date" name="fecha_fin" value="{{ $fechaFin }}" onchange="if(this.form.fecha_inicio.value) this.form.submit()" onclick="event.stopPropagation(); this.showPicker();" class="bg-transparent border-0 p-0 text-sm font-semibold text-white focus:outline-none focus:ring-0 cursor-pointer w-28" placeholder="Hasta">
+                <input type="datetime-local" name="fecha_fin" value="{{ $fechaFin }}" onchange="if(this.form.fecha_inicio.value) this.form.submit()" onclick="event.stopPropagation(); this.showPicker();" class="bg-transparent border-0 p-0 text-sm font-semibold text-white focus:outline-none focus:ring-0 cursor-pointer w-40" placeholder="Hasta">
                 @if($fechaInicio || $fechaFin)
                     <a href="{{ route('admin.reportes') }}" class="text-slate-500 hover:text-white flex items-center transition-colors ml-1">
                         <span class="material-symbols-outlined text-sm">close</span>
@@ -55,7 +55,7 @@
             </div>
             <p class="text-on-surface-variant text-xs font-bold uppercase tracking-widest mb-1 relative z-10">
                 @if($fechaInicio && $fechaFin)
-                    Ventas ({{ date('d/m/Y', strtotime($fechaInicio)) }} - {{ date('d/m/Y', strtotime($fechaFin)) }})
+                    Ventas ({{ date('d/m/y H:i', strtotime($fechaInicio)) }} - {{ date('d/m/y H:i', strtotime($fechaFin)) }})
                 @elseif($fechaSelect)
                     Ventas del Día ({{ date('d/m/Y', strtotime($fechaSelect)) }})
                 @else

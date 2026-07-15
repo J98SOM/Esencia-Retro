@@ -626,8 +626,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $queryFilter = function($query) use ($periodo, $fechaSelect, $fechaInicio, $fechaFin) {
             if ($fechaInicio && $fechaFin) {
                 return $query->whereBetween('facturas.created_at', [
-                    \Carbon\Carbon::parse($fechaInicio)->startOfDay(),
-                    \Carbon\Carbon::parse($fechaFin)->endOfDay()
+                    \Carbon\Carbon::parse($fechaInicio),
+                    \Carbon\Carbon::parse($fechaFin)
                 ]);
             }
             if ($fechaSelect) {
@@ -786,8 +786,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $queryFilter = function($query) use ($periodo, $fechaSelect, $fechaInicio, $fechaFin) {
             if ($fechaInicio && $fechaFin) {
                 return $query->whereBetween('facturas.created_at', [
-                    \Carbon\Carbon::parse($fechaInicio)->startOfDay(),
-                    \Carbon\Carbon::parse($fechaFin)->endOfDay()
+                    \Carbon\Carbon::parse($fechaInicio),
+                    \Carbon\Carbon::parse($fechaFin)
                 ]);
             }
             if ($fechaSelect) {
