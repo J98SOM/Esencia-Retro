@@ -382,8 +382,130 @@
                 console.warn('AudioContext failed:', e);
             }
         };
+
+        // Global Loading Screen Functions
+        window.showLoader = function(text = 'Procesando...') {
+            const loader = document.getElementById('global-loader');
+            const loaderText = document.getElementById('global-loader-text');
+            if (loader) {
+                if (loaderText) loaderText.textContent = text;
+                loader.classList.remove('opacity-0', 'pointer-events-none');
+                loader.classList.add('opacity-100');
+            }
+        };
+
+        window.hideLoader = function() {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.classList.remove('opacity-100');
+                loader.classList.add('opacity-0', 'pointer-events-none');
+            }
+        };
+
+        window.showLoading = window.showLoader;
+        window.hideLoading = window.hideLoader;
+
+        // Auto-interceptor for Standard Non-GET Form Submissions
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form && form.tagName === 'FORM') {
+                const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                if (method === 'GET' || form.dataset.noLoader === 'true') {
+                    return;
+                }
+                
+                let msg = 'Procesando...';
+                const activeBtn = document.activeElement;
+                if (activeBtn && activeBtn.form === form) {
+                    const btnText = activeBtn.textContent.trim().toLowerCase();
+                    if (btnText.includes('eliminar') || btnText.includes('borrar')) {
+                        msg = 'Eliminando...';
+                    } else if (btnText.includes('guardar') || btnText.includes('crear') || btnText.includes('registrar')) {
+                        msg = 'Guardando cambios...';
+                    } else if (btnText.includes('actualizar')) {
+                        msg = 'Actualizando...';
+                    } else if (btnText.includes('cobrar') || btnText.includes('pagar')) {
+                        msg = 'Procesando pago...';
+                    }
+                } else {
+                    const action = (form.getAttribute('action') || '').toLowerCase();
+                    if (action.includes('delete') || action.includes('destroy')) {
+                        msg = 'Eliminando...';
+                    } else if (action.includes('store') || action.includes('create')) {
+                        msg = 'Guardando...';
+                    } else if (action.includes('update') || action.includes('edit')) {
+                        msg = 'Actualizando...';
+                    }
+                }
+                
+                window.showLoader(msg);
+            }
+        });
+
+        // Auto-interceptor for AJAX/Fetch modification requests (POST/PUT/DELETE)
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let url = '';
+            let method = 'GET';
+            let options = {};
+            
+            if (args[0] instanceof Request) {
+                url = args[0].url;
+                method = args[0].method || 'GET';
+            } else {
+                url = args[0];
+                options = args[1] || {};
+                method = options.method || 'GET';
+            }
+            method = method.toUpperCase();
+            
+            // Skip background/silent operations or specific UI update polls
+            const isBg = url.includes('partial=1') || url.includes('/caja/preload') || url.includes('/productos/json') || options.noLoader;
+            const isModification = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method) && !isBg;
+            
+            if (isModification) {
+                let msg = 'Procesando...';
+                if (method === 'DELETE') {
+                    msg = 'Eliminando...';
+                } else if (method === 'POST') {
+                    msg = 'Guardando...';
+                } else if (method === 'PUT' || method === 'PATCH') {
+                    msg = 'Actualizando...';
+                }
+                window.showLoader(msg);
+            }
+            
+            try {
+                return await originalFetch(...args);
+            } finally {
+                if (isModification) {
+                    window.hideLoader();
+                }
+            }
+        };
     </script>
     <!-- Removed redundant client-side API/roles scripts -->
     @stack('scripts')
+
+    <!-- Global Loading Screen Overlay -->
+    <div id="global-loader" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="flex flex-col items-center gap-6 p-8 rounded-3xl bg-[#0f0f0f]/95 border border-white/10 shadow-2xl relative overflow-hidden group max-w-xs w-full text-center">
+            <!-- Background glow -->
+            <div class="absolute -inset-10 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-500"></div>
+            
+            <div class="relative">
+                <!-- Dual spin rings -->
+                <div class="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                <div class="absolute inset-1 w-14 h-14 border-4 border-transparent border-t-[#8a6c1c] rounded-full animate-spin [animation-duration:0.8s] [animation-direction:reverse]"></div>
+                <!-- Brand logo center or small dot -->
+                <div class="absolute inset-0 m-auto w-3 h-3 bg-primary rounded-full animate-ping"></div>
+            </div>
+            
+            <div class="space-y-1 relative z-10">
+                <p id="global-loader-text" class="text-base font-black text-white tracking-tight">Procesando...</p>
+                <p class="text-[10px] uppercase font-bold text-primary tracking-widest opacity-80">Esencia Retro</p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

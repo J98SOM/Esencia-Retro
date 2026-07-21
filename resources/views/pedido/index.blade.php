@@ -127,34 +127,12 @@
     </div>
 </div>
 
-<!-- Global Loading Screen Overlay -->
-<div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
-    <div class="flex flex-col items-center gap-4 p-6 rounded-2xl bg-surface-container-high border border-white/10 shadow-2xl">
-        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm font-bold text-white tracking-tight">Procesando...</p>
-    </div>
-</div>
-
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const loader = document.getElementById('global-loader');
-        const loaderText = loader ? loader.querySelector('p') : null;
-
-        function showLoader(text = 'Procesando...') {
-            if (loader) {
-                if (loaderText) loaderText.textContent = text;
-                loader.classList.remove('opacity-0', 'pointer-events-none');
-                loader.classList.add('opacity-100');
-            }
-        }
-
-        function hideLoader() {
-            if (loader) {
-                loader.classList.remove('opacity-100');
-                loader.classList.add('opacity-0', 'pointer-events-none');
-            }
-        }
+        // Using global window.showLoader / window.hideLoader from layout
+        const showLoader = window.showLoader || (() => {});
+        const hideLoader = window.hideLoader || (() => {});
 
         // DOM Updates from pre-rendered HTML
         function updateDOMFromHtml(html) {
