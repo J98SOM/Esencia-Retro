@@ -57,7 +57,12 @@
                 <div class="flex justify-between items-start mb-8">
                     <div>
                         <span class="text-slate-500 font-['Inter'] uppercase tracking-widest text-[10px] block mb-1">Zona General</span>
-                        <h3 class="text-3xl font-black text-white">{{ $m->nombre }}</h3>
+                        <h3 class="text-3xl font-black text-white flex items-center gap-2">
+                            <span>{{ $m->nombre }}</span>
+                            @if($m->es_admin)
+                                <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs uppercase tracking-wider font-extrabold">Admin</span>
+                            @endif
+                        </h3>
                     </div>
                     @if($isOccupied)
                         <div class="px-3 py-1 bg-primary/20 rounded-lg"><span class="text-[10px] font-black text-primary uppercase tracking-widest">Ocupada</span></div>
@@ -117,6 +122,10 @@
             <div>
                 <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Capacidad Max. Pax</label>
                 <input name="capacidad" type="number" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="4">
+            </div>
+            <div class="flex items-center gap-2 py-2">
+                <input id="es_admin" name="es_admin" type="checkbox" value="1" class="rounded bg-surface-container-highest border border-white/10 text-primary focus:ring-primary focus:ring-2">
+                <label for="es_admin" class="text-xs font-bold text-on-surface-variant uppercase tracking-widest cursor-pointer select-none">Mesa Administrativa</label>
             </div>
             <div class="flex gap-3 pt-4 border-t border-white/10 mt-6">
                 <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>

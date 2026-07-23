@@ -112,6 +112,11 @@
                 <p class="text-red-400 text-xs mt-1 hidden" data-error="capacidad"></p>
             </div>
 
+            <div class="flex items-center gap-2 py-2">
+                <input id="mesa-es-admin-input" type="checkbox" class="rounded bg-surface-container border border-surface-container-high text-primary focus:ring-primary focus:ring-2">
+                <label for="mesa-es-admin-input" class="text-sm font-semibold text-white cursor-pointer select-none">Mesa Administrativa (No se cobra ni descuenta inventario)</label>
+            </div>
+
             <div id="mesa-form-error" class="hidden p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-sm"></div>
 
             <div class="flex gap-3 pt-4">
@@ -217,9 +222,10 @@ async function loadMesas() {
             const tr = document.createElement('tr');
             tr.className = 'border-t border-surface-container/30 hover:bg-surface-container/20 transition-colors';
             const registroDate = new Date(mesa.created_at).toLocaleDateString('es-ES');
+            const adminBadge = mesa.es_admin ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-400">Admin</span>' : '';
             tr.innerHTML = `
                 <td class="px-6 py-4 text-sm font-medium text-white">${mesa.id}</td>
-                <td class="px-6 py-4 text-sm text-white">${mesa.nombre}</td>
+                <td class="px-6 py-4 text-sm text-white">${mesa.nombre}${adminBadge}</td>
                 <td class="px-6 py-4 text-sm">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-container/20 text-primary">
                         ${mesa.capacidad} personas
@@ -249,6 +255,7 @@ function openMesaModal() {
     document.getElementById('mesa-id').value = '';
     document.getElementById('mesa-nombre-input').value = '';
     document.getElementById('mesa-capacidad-input').value = '';
+    document.getElementById('mesa-es-admin-input').checked = false;
     document.getElementById('mesa-form-error').classList.add('hidden');
     document.querySelectorAll('[data-error]').forEach(el => {
         el.classList.add('hidden');
@@ -276,6 +283,7 @@ async function editMesa(id) {
         document.getElementById('mesa-id').value = mesa.id;
         document.getElementById('mesa-nombre-input').value = mesa.nombre;
         document.getElementById('mesa-capacidad-input').value = mesa.capacidad;
+        document.getElementById('mesa-es-admin-input').checked = !!mesa.es_admin;
         
         const modal = document.getElementById('mesa-modal');
         modal.classList.remove('hidden');
@@ -315,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('mesa-id').value;
         const nombre = document.getElementById('mesa-nombre-input').value.trim();
         const capacidad = parseInt(document.getElementById('mesa-capacidad-input').value, 10);
+        const es_admin = document.getElementById('mesa-es-admin-input').checked;
         
         try {
             const url = id ? `${apiBase}/${id}` : apiBase;
@@ -326,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     ...(window.getApiHeaders ? window.getApiHeaders({ 'X-CSRF-TOKEN': csrfToken() }) : { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' })
                 },
-                body: JSON.stringify({ nombre, capacidad })
+                body: JSON.stringify({ nombre, capacidad, es_admin })
             });
             
             const contentType = res.headers.get('content-type') || '';
