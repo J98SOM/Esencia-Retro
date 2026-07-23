@@ -82,6 +82,25 @@ class CajaController extends Controller
                     ->first();
             }
 
+            $targetMesaId = $mesaId ?: ($factura ? $factura->mesa_id : null);
+            if ($targetMesaId) {
+                $mesaObj = \App\Models\Mesa::find($targetMesaId);
+                if ($mesaObj && $mesaObj->es_admin) {
+                    $invoice['total'] = 0;
+                    $invoice['cambio'] = 0;
+                    if (!empty($invoice['items']) && is_array($invoice['items'])) {
+                        foreach ($invoice['items'] as $idx => $it) {
+                            if (isset($invoice['items'][$idx]['precio'])) {
+                                $invoice['items'][$idx]['precio'] = 0;
+                            }
+                            if (isset($invoice['items'][$idx]['precio_unitario'])) {
+                                $invoice['items'][$idx]['precio_unitario'] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+
             if ($factura) {
                 $factura->tipo = $tipo;
                 $factura->numero_orden = $factura->numero_orden ?: $numeroOrden;
@@ -218,6 +237,24 @@ class CajaController extends Controller
         $factura = Factura::find($invoice['factura_id']);
         if (! $factura) {
             return response()->json(['message' => 'Factura no encontrada'], 404);
+        }
+
+        if ($factura->mesa_id) {
+            $mesaObj = \App\Models\Mesa::find($factura->mesa_id);
+            if ($mesaObj && $mesaObj->es_admin) {
+                $invoice['total'] = 0;
+                $invoice['cambio'] = 0;
+                if (!empty($invoice['items']) && is_array($invoice['items'])) {
+                    foreach ($invoice['items'] as $idx => $it) {
+                        if (isset($invoice['items'][$idx]['precio'])) {
+                            $invoice['items'][$idx]['precio'] = 0;
+                        }
+                        if (isset($invoice['items'][$idx]['precio_unitario'])) {
+                            $invoice['items'][$idx]['precio_unitario'] = 0;
+                        }
+                    }
+                }
+            }
         }
 
         DB::beginTransaction();

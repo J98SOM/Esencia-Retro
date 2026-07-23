@@ -22,6 +22,7 @@ class MesaRequest extends FormRequest
                 Rule::unique('mesas', 'nombre')->ignore($this->route('mesa')),
             ],
             'capacidad' => 'required|integer|min:1',
+            'es_admin' => 'nullable|boolean',
         ];
     }
 

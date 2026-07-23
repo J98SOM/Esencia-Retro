@@ -9,10 +9,12 @@ class Mesa extends Model
     protected $fillable = [
         'nombre',
         'capacidad',
+        'es_admin',
     ];
 
     protected $casts = [
         'capacidad' => 'integer',
+        'es_admin' => 'boolean',
     ];
 
     public function facturas()

@@ -199,11 +199,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/mesas', function (Request $request) {
         $request->merge([
             'nombre' => $request->filled('nombre') ? $request->nombre : null,
+            'es_admin' => $request->has('es_admin'),
         ]);
         
         $data = $request->validate([
             'nombre' => 'nullable|string|max:255',
             'capacidad' => 'nullable|integer',
+            'es_admin' => 'boolean',
         ]);
 
         if (empty($data['nombre'])) {
@@ -240,7 +242,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $total = 0;
         if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
             $items = $factura->productos;
-            $total = $factura->monto_total;
+            $total = $mesa->es_admin ? 0 : $factura->monto_total;
         }
 
         return view('pedido.index', [
@@ -260,7 +262,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $total = 0;
         if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
             $items = $factura->productos;
-            $total = $factura->monto_total;
+            $total = $mesa->es_admin ? 0 : $factura->monto_total;
         }
 
         return view('pedido.index', [
@@ -321,13 +323,16 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $pxf = $existingItems->get($prodId);
             if ($pxf) {
                 $pxf->cantidad += $qty;
+                if ($mesa->es_admin) {
+                    $pxf->precio_unitario = 0;
+                }
                 $pxf->save();
             } else {
                 $pxf = ProductoXFactura::create([
                     'producto_id' => $producto->id,
                     'factura_id' => $factura->id,
                     'cantidad' => $qty,
-                    'precio_unitario' => $producto->precio,
+                    'precio_unitario' => $mesa->es_admin ? 0 : $producto->precio,
                     'descripcion' => $producto->nombre,
                 ]);
                 
@@ -338,7 +343,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             }
         }
         
-        $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
+        $factura->monto_total = $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
         $factura->save();
         
         $mesa = Mesa::find($id);
@@ -377,7 +382,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         if ($factura->productos()->count() == 0) {
             $factura->delete();
         } else {
-            $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
+            $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
             $factura->save();
         }
         
@@ -410,7 +415,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             if ($factura->productos()->count() == 0) {
                 $factura->delete();
             } else {
-                $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
+                $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
                 $factura->save();
             }
             $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
@@ -425,9 +430,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $item->cantidad = $cantidad;
+        if ($mesa && $mesa->es_admin) {
+            $item->precio_unitario = 0;
+        }
         $item->save();
         
-        $factura->monto_total = $factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0;
+        $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
         $factura->save();
         
         $eventMessage = "{$prodNombre} cambiado a {$cantidad}x en {$mesaNombre}";
@@ -450,7 +458,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
 
         $items = $factura->productos;
-        $subtotal = $factura->monto_total;
+        $subtotal = $mesa->es_admin ? 0 : $factura->monto_total;
         $servicio = 0;
         $total = $subtotal;
 
@@ -471,7 +479,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         
         if ($factura) {
             // Update total without service fee
-            $subtotal = $factura->monto_total;
+            $subtotal = $mesa->es_admin ? 0 : $factura->monto_total;
             $servicio = 0;
             $total = $subtotal;
 
@@ -483,7 +491,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $cambio = max(0, $recibido - $total);
 
             $factura->monto_total = $total;
-            $factura->cambio = $cambio;
+            $factura->cambio = $mesa->es_admin ? 0 : $cambio;
             $factura->estatus = 'pagado';
             $factura->save();
 
