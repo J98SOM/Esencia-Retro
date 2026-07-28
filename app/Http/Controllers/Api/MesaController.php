@@ -11,10 +11,15 @@ class MesaController extends Controller
 {
     public function index(): JsonResponse
     {
-        $mesas = Mesa::with(['latestFactura'])
+        $query = Mesa::with(['latestFactura'])
             ->orderByRaw('LENGTH(nombre) ASC')
-            ->orderBy('nombre', 'ASC')
-            ->get();
+            ->orderBy('nombre', 'ASC');
+            
+        if (!auth()->check() || !auth()->user()->rol || auth()->user()->rol->name !== 'admin') {
+            $query->where('es_admin', false);
+        }
+        
+        $mesas = $query->get();
         return response()->json($mesas);
     }
 

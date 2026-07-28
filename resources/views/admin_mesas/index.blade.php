@@ -78,7 +78,11 @@
                         </div>
                     </div>
                     <div class="pt-4 border-t border-white/5 flex gap-2">
-                        <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
+                        @if($m->es_admin && !empty($m->password))
+                            <button onclick="openPasswordModal({{ $m->id }}, '{{ route('admin.pedido', ['id' => $m->id]) }}')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors w-full">Detalles</button>
+                        @else
+                            <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
+                        @endif
                         @if(auth()->user()->rol && auth()->user()->rol->name === 'admin')
                         <form method="POST" action="{{ route('admin.mesas.delete', ['id' => $m->id]) }}" onsubmit="return confirm('¿Eliminar mesa?')">
                             @csrf
@@ -124,8 +128,12 @@
                 <input name="capacidad" type="number" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="4">
             </div>
             <div class="flex items-center gap-2 py-2">
-                <input id="es_admin" name="es_admin" type="checkbox" value="1" class="rounded bg-surface-container-highest border border-white/10 text-primary focus:ring-primary focus:ring-2">
+                <input id="es_admin" name="es_admin" type="checkbox" value="1" onchange="document.getElementById('password_container').style.display = this.checked ? 'block' : 'none'" class="rounded bg-surface-container-highest border border-white/10 text-primary focus:ring-primary focus:ring-2">
                 <label for="es_admin" class="text-xs font-bold text-on-surface-variant uppercase tracking-widest cursor-pointer select-none">Mesa Administrativa</label>
+            </div>
+            <div id="password_container" style="display: none;" class="mb-4">
+                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Contraseña</label>
+                <input name="password" type="password" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Introduce una contraseña">
             </div>
             <div class="flex gap-3 pt-4 border-t border-white/10 mt-6">
                 <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
@@ -225,7 +233,93 @@
         }
     });
 })();
-</script>
+        function closePasswordModal() {
+            document.getElementById('modalPasswordOverlay').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('modalPasswordContent').classList.add('scale-95', 'opacity-0');
+            document.getElementById('password_input').value = '';
+            document.getElementById('password_error').classList.add('hidden');
+        }
+
+        let currentAdminMesaUrl = '';
+        let currentAdminMesaId = '';
+
+        function openPasswordModal(id, url) {
+            currentAdminMesaId = id;
+            currentAdminMesaUrl = url;
+            document.getElementById('password_error').classList.add('hidden');
+            document.getElementById('password_input').value = '';
+            
+            document.getElementById('modalPasswordOverlay').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('modalPasswordContent').classList.remove('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                document.getElementById('password_input').focus();
+            }, 100);
+        }
+
+        function verifyPassword(e) {
+            e.preventDefault();
+            const password = document.getElementById('password_input').value;
+            const btn = document.getElementById('verify_btn');
+            
+            if (!password) {
+                document.getElementById('password_error').textContent = 'Ingresa la contraseña.';
+                document.getElementById('password_error').classList.remove('hidden');
+                return;
+            }
+            
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">autorenew</span> Validando...';
+            btn.disabled = true;
+
+            fetch('/admin/mesas/' + currentAdminMesaId + '/verify-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ password: password })
+            })
+            .then(res => res.json().then(data => ({status: res.status, body: data})))
+            .then(res => {
+                if (res.status === 200 && res.body.success) {
+                    window.location.href = currentAdminMesaUrl;
+                } else {
+                    document.getElementById('password_error').textContent = res.body.message || 'Contraseña incorrecta.';
+                    document.getElementById('password_error').classList.remove('hidden');
+                    btn.innerHTML = 'Verificar';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                document.getElementById('password_error').textContent = 'Error de conexión.';
+                document.getElementById('password_error').classList.remove('hidden');
+                btn.innerHTML = 'Verificar';
+                btn.disabled = false;
+            });
+        }
+    </script>
+    
+    <!-- Modal Password -->
+    <div id="modalPasswordOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-4">
+        <div id="modalPasswordContent" class="bg-surface-container-high border border-white/10 rounded-3xl p-8 max-w-sm w-full transform scale-95 opacity-0 transition-all duration-300 shadow-2xl relative">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-white">Mesa Administrador</h2>
+                <button onclick="closePasswordModal()" class="text-on-surface-variant hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form onsubmit="verifyPassword(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Contraseña</label>
+                    <input id="password_input" type="password" class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="******">
+                    <p id="password_error" class="text-red-400 text-xs mt-1 hidden"></p>
+                </div>
+                <div class="pt-4 border-t border-white/10 mt-6">
+                    <button id="verify_btn" type="submit" class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm flex justify-center items-center gap-2">Verificar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endpush
 
 @endsection
