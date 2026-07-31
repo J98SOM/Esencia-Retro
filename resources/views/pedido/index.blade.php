@@ -15,12 +15,12 @@
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
                 <span class="text-primary hover:underline"><a href="{{ route('admin.mesas') }}">Mesas</a></span>
                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                <span class="text-primary">Mesa {{ $mesaId ?? '00' }}</span>
+                <span class="text-primary">{{ $mesa->nombre ?? ('Mesa ' . ($mesaId ?? '00')) }}</span>
             </nav>
             <h2 class="text-4xl font-extrabold tracking-tight text-white flex items-center gap-4">
                 Pedido en Curso 
                 <span class="px-3 py-1 bg-primary/20 text-primary rounded-lg text-sm uppercase tracking-widest font-black">
-                    Mesa {{ $mesaId ?? '00' }}
+                    {{ $mesa->nombre ?? ('Mesa ' . ($mesaId ?? '00')) }}
                 </span>
                 @if(isset($factura) && $factura->numero_orden)
                 <span class="px-3 py-1 bg-white/10 text-white rounded-lg text-sm uppercase tracking-widest font-black">

@@ -205,7 +205,7 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Total a Pagar</p>
-                                <p class="text-xs text-slate-500">Mesa {{ $mesaId }}</p>
+                                <p class="text-xs text-slate-500">{{ $mesa->nombre ?? ('Mesa ' . $mesaId) }}</p>
                             </div>
                         </div>
                         <span id="total-to-pay-el" class="text-3xl font-black text-white tracking-tighter" data-total="{{ $total }}">${{ number_format($total, 0, ',', '.') }}</span>
