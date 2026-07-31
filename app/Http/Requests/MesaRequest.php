@@ -23,6 +23,7 @@ class MesaRequest extends FormRequest
             ],
             'capacidad' => 'required|integer|min:1',
             'es_admin' => 'nullable|boolean',
+            'password' => 'nullable|string|max:255',
         ];
     }
 

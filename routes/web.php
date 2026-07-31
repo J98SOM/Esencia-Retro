@@ -189,24 +189,33 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // CRUD de Mesas (Web)
     Route::get('/mesas', function () {
-        $mesas = Mesa::with(['latestFactura.productos.producto'])
+        $query = Mesa::with(['latestFactura.productos.producto'])
             ->orderByRaw('LENGTH(nombre) ASC')
-            ->orderBy('nombre', 'ASC')
-            ->get();
+            ->orderBy('nombre', 'ASC');
+            
+        if (!auth()->user()->rol || auth()->user()->rol->name !== 'admin') {
+            $query->where('es_admin', false);
+        }
+        
+        $mesas = $query->get();
         return view('admin_mesas.index', compact('mesas'));
     })->name('mesas');
 
     Route::post('/mesas', function (Request $request) {
-        $request->merge([
-            'nombre' => $request->filled('nombre') ? $request->nombre : null,
-            'es_admin' => $request->has('es_admin'),
-        ]);
-        
         $data = $request->validate([
             'nombre' => 'nullable|string|max:255',
             'capacidad' => 'nullable|integer',
-            'es_admin' => 'boolean',
+            'password' => 'nullable|string',
         ]);
+        
+        $data['nombre'] = !empty($data['nombre']) ? $data['nombre'] : null;
+        $data['es_admin'] = $request->has('es_admin') ? 1 : 0;
+        
+        if (!empty($data['password'])) {
+            $data['password'] = \Illuminate\Support\Facades\Hash::make($data['password']);
+        } else {
+            $data['password'] = null;
+        }
 
         if (empty($data['nombre'])) {
             // Find all tables that start with "Mesa " followed by a number
@@ -232,6 +241,20 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $mesa->delete();
         return redirect()->route('admin.mesas')->with('success', 'Mesa eliminada correctamente.');
     })->name('mesas.delete');
+
+    Route::post('/mesas/{id}/verify-password', function (Request $request, $id) {
+        $mesa = Mesa::findOrFail($id);
+        
+        if (!$mesa->es_admin) {
+            return response()->json(['success' => true]);
+        }
+        
+        if (\Illuminate\Support\Facades\Hash::check($request->password, $mesa->password)) {
+            return response()->json(['success' => true]);
+        }
+        
+        return response()->json(['success' => false, 'message' => 'Contraseña incorrecta'], 403);
+    })->name('mesas.verify');
 
     // Pedidos & Mesas Interaction (No endpoints)
     $renderPedidoHtml = function($mesaId) {

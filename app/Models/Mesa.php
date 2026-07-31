@@ -10,6 +10,11 @@ class Mesa extends Model
         'nombre',
         'capacidad',
         'es_admin',
+        'password',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected $casts = [
