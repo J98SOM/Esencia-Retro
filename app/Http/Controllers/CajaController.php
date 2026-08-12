@@ -6,8 +6,6 @@ use App\Models\Factura;
 use App\Models\MetodoPago;
 use App\Models\ProductoXFactura;
 use App\Models\RealtimeEvent;
-use App\Models\AperturaCaja;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,17 +13,6 @@ use Illuminate\Support\Facades\Schema;
 
 class CajaController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(function ($request, $next) {
-            $roleName = strtolower(optional(auth()->user()->rol)->name ?? '');
-            if (in_array($roleName, ['mesero', 'waiter'])) {
-                return redirect()->route('admin.dashboard')->with('error', 'No tienes permisos para acceder a la Caja.');
-            }
-            return $next($request);
-        });
-    }
-
     /**
      * Show caja view with next invoice number precomputed for 'pos' tipo.
      */
@@ -41,121 +28,7 @@ class CajaController extends Controller
             $request->session()->forget('caja_preload');
         }
 
-        $activeCaja = AperturaCaja::where('estado', 'abierta')->first();
-        $usuarios = User::orderBy('name')->get();
-
-        $ventasMetodos = [];
-        $productosVendidos = [];
-        if ($activeCaja) {
-            $ventasMetodos = DB::table('metodos_pago')
-                ->join('facturas', 'metodos_pago.factura_id', '=', 'facturas.id')
-                ->where('facturas.id', '>', $activeCaja->last_factura_id)
-                ->select('metodos_pago.metodo', DB::raw('SUM(metodos_pago.valor) as total'))
-                ->groupBy('metodos_pago.metodo')
-                ->get();
-
-            $productosVendidos = DB::table('productosxfactura')
-                ->join('facturas', 'productosxfactura.factura_id', '=', 'facturas.id')
-                ->leftJoin('productos', 'productosxfactura.producto_id', '=', 'productos.id')
-                ->where('facturas.id', '>', $activeCaja->last_factura_id)
-                ->select(
-                    'productosxfactura.producto_id',
-                    DB::raw('COALESCE(productos.nombre, productosxfactura.descripcion) as producto_nombre'),
-                    DB::raw('SUM(productosxfactura.cantidad) as cantidad_total'),
-                    DB::raw('SUM(productosxfactura.cantidad * productosxfactura.precio_unitario) as total_valor')
-                )
-                ->groupBy('productosxfactura.producto_id', 'producto_nombre')
-                ->orderByDesc('cantidad_total')
-                ->get();
-        }
-
-        return view('alquiler.caja', [
-            'nextInvoiceNo' => $nextStr,
-            'cajaPreload' => $cajaPreload,
-            'activeCaja' => $activeCaja,
-            'usuarios' => $usuarios,
-            'ventasMetodos' => $ventasMetodos,
-            'productosVendidos' => $productosVendidos,
-        ]);
-    }
-
-    /**
-     * Abrir la caja con un monto inicial y un trabajador responsable.
-     */
-    public function apertura(Request $request)
-    {
-        $request->validate([
-            'trabajador' => 'required|string|max:255',
-            'monto_inicial' => 'required|numeric|min:0',
-            'notas' => 'nullable|string',
-        ]);
-
-        // Asegurarse de que no haya una caja ya abierta
-        $exists = AperturaCaja::where('estado', 'abierta')->exists();
-        if ($exists) {
-            return redirect()->back()->with('error', 'Ya existe una caja abierta.');
-        }
-
-        $maxFacturaId = DB::table('facturas')->max('id') ?: 0;
-
-        AperturaCaja::create([
-            'trabajador' => $request->trabajador,
-            'last_factura_id' => $maxFacturaId,
-            'monto_inicial' => $request->monto_inicial,
-            'fecha_apertura' => now(),
-            'estado' => 'abierta',
-            'notas' => $request->notas,
-        ]);
-
-        return redirect()->back()->with('success', 'Caja abierta correctamente.');
-    }
-
-    public function cierre(Request $request)
-    {
-        $request->validate([
-            'monto_final' => 'required|numeric|min:0',
-            'notas' => 'nullable|string',
-        ]);
-
-        $activeCaja = AperturaCaja::where('estado', 'abierta')->first();
-        if (!$activeCaja) {
-            return redirect()->back()->with('error', 'No hay ninguna caja abierta para cerrar.');
-        }
-
-        // Calcular ventas por método de pago para congelar en base de datos
-        $ventasMetodos = DB::table('metodos_pago')
-            ->join('facturas', 'metodos_pago.factura_id', '=', 'facturas.id')
-            ->where('facturas.id', '>', $activeCaja->last_factura_id)
-            ->select('metodos_pago.metodo', DB::raw('SUM(metodos_pago.valor) as total'))
-            ->groupBy('metodos_pago.metodo')
-            ->get();
-
-        $efectivo = 0;
-        $tarjeta = 0;
-        $qr = 0;
-
-        foreach($ventasMetodos as $v) {
-            $m = strtolower($v->metodo);
-            if (str_contains($m, 'tarjeta') || str_contains($m, 'pos') || str_contains($m, 'visa') || str_contains($m, 'mastercard')) {
-                $tarjeta += $v->total;
-            } elseif (str_contains($m, 'efectivo')) {
-                $efectivo += $v->total;
-            } else {
-                $qr += $v->total;
-            }
-        }
-
-        $activeCaja->update([
-            'monto_final' => $request->monto_final,
-            'ventas_efectivo' => $efectivo,
-            'ventas_tarjeta' => $tarjeta,
-            'ventas_qr' => $qr,
-            'fecha_cierre' => now(),
-            'estado' => 'cerrada',
-            'notas' => $activeCaja->notas . ($request->notas ? "\nNotas de Cierre: " . $request->notas : ""),
-        ]);
-
-        return redirect()->back()->with('success', 'Caja cerrada correctamente.');
+        return view('alquiler.caja', ['nextInvoiceNo' => $nextStr, 'cajaPreload' => $cajaPreload]);
     }
 
     /**

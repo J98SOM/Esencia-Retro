@@ -3,7 +3,6 @@
 use App\Http\Controllers\AlquilerController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\MesaController;
-use App\Http\Controllers\CajaController;
 use App\Models\Factura;
 use App\Models\Mesa;
 use App\Models\Producto;
@@ -93,9 +92,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             ->whereRaw('stock_inicial <= stock_minimo')
             ->get();
 
-        $activeCaja = \App\Models\AperturaCaja::where('estado', 'abierta')->first();
-
-        return view('dashboard.index', compact('mesas', 'ventasDia', 'pedidosActivos', 'topProducto', 'topProductoQty', 'alertasInventario', 'alertas', 'activeCaja'));
+        return view('dashboard.index', compact('mesas', 'ventasDia', 'pedidosActivos', 'topProducto', 'topProductoQty', 'alertasInventario', 'alertas'));
     })->name('dashboard');
 
     // CRUD de Productos (Web)
@@ -281,9 +278,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     };
 
     Route::get('/mesas/{id}/pedido', function ($id) {
-        if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
-            return redirect()->route('admin.dashboard');
-        }
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
         
@@ -479,9 +473,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     })->name('pedido.update_item');
 
     Route::get('/mesas/{id}/checkout', function ($id) {
-        if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
-            return redirect()->route('admin.dashboard');
-        }
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
         
@@ -796,26 +787,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             ->get();
         $totalCategorySum = $categories->sum('total');
 
-        // 7. Cierres de caja en el período/día seleccionado
-        $cajasQuery = \App\Models\AperturaCaja::where('estado', 'cerrada');
-        if ($fechaInicio && $fechaFin) {
-            $cajasQuery->whereBetween('fecha_cierre', [
-                \Carbon\Carbon::parse($fechaInicio)->startOfDay(),
-                \Carbon\Carbon::parse($fechaFin)->endOfDay()
-            ]);
-        } elseif ($fechaSelect) {
-            $cajasQuery->whereDate('fecha_cierre', $fechaSelect);
-        } elseif ($periodo === 'diario') {
-            $cajasQuery->whereDate('fecha_cierre', today());
-        } elseif ($periodo === 'semanal') {
-            $cajasQuery->where('fecha_cierre', '>=', today()->subDays(7));
-        } elseif ($periodo === 'mensual') {
-            $cajasQuery->where('fecha_cierre', '>=', today()->subDays(30));
-        } elseif ($periodo === 'anual') {
-            $cajasQuery->whereYear('fecha_cierre', today()->year);
-        }
-        $cajasCerradas = $cajasQuery->orderByDesc('fecha_cierre')->get();
-
         return view('reportes.index', compact(
             'periodo',
             'fechaSelect',
@@ -833,8 +804,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             'maxTraffic',
             'staffStats',
             'categories',
-            'totalCategorySum',
-            'cajasCerradas'
+            'totalCategorySum'
         ));
     })->name('reportes');
 
@@ -1047,53 +1017,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         
         return redirect()->route('admin.cocina')->with('success', 'Estatus del producto actualizado.');
     })->name('cocina.item.status');
-
-    // Caja web views and actions
-    Route::get('/caja', [CajaController::class, 'index'])->name('caja');
-    Route::post('/caja/apertura', [CajaController::class, 'apertura'])->name('caja.apertura');
-    Route::post('/caja/cierre', [CajaController::class, 'cierre'])->name('caja.cierre');
 });
 
 // Redirect to dashboard (compatibility)
 Route::middleware('auth')->get('/dashboard', function () {
     return redirect()->route('admin.dashboard');
 })->name('dashboard');
-
-// Session preload endpoint for Caja from Mesas
-Route::middleware('auth')->post('/alquiler/caja/preload', function (Request $request) {
-    $products = $request->input('products');
-    $mesaId = $request->input('mesa_id');
-    
-    $factura = Factura::where('mesa_id', $mesaId)
-        ->whereNotIn(DB::raw('LOWER(estatus)'), ['pagado', 'pagada'])
-        ->first();
-
-    $items = [];
-    if (is_array($products)) {
-        foreach ($products as $it) {
-            $p = \App\Models\Producto::find($it['id']);
-            if ($p) {
-                $items[] = [
-                    'producto_id' => $p->id,
-                    'desc' => $p->nombre,
-                    'cant' => $it['qty'],
-                    'precio' => $p->precio,
-                    'precio_unitario' => $p->precio,
-                ];
-            }
-        }
-    }
-
-    $preload = [
-        'mesa_id' => $mesaId,
-        'factura_id' => $factura ? $factura->id : null,
-        'items' => $items,
-    ];
-
-    $request->session()->put('caja_preload', $preload);
-
-    return response()->json([
-        'success' => true,
-        'redirect' => route('admin.caja')
-    ]);
-})->name('alquiler.caja.preload');
