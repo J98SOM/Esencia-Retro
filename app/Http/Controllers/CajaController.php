@@ -13,17 +13,22 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
-class CajaController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class CajaController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware(function ($request, $next) {
-            $roleName = strtolower(optional(auth()->user()->rol)->name ?? '');
-            if (in_array($roleName, ['mesero', 'waiter'])) {
-                return redirect()->route('admin.dashboard')->with('error', 'No tienes permisos para acceder a la Caja.');
-            }
-            return $next($request);
-        });
+        return [
+            new Middleware(function ($request, $next) {
+                $roleName = strtolower(optional(auth()->user()->rol)->name ?? '');
+                if (in_array($roleName, ['mesero', 'waiter'])) {
+                    return redirect()->route('admin.dashboard')->with('error', 'No tienes permisos para acceder a la Caja.');
+                }
+                return $next($request);
+            }),
+        ];
     }
 
     /**
