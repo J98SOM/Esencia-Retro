@@ -257,5 +257,73 @@
             <a href="{{ route('admin.reportes.exportar', ['periodo' => $periodo, 'fecha' => $fechaSelect, 'fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin]) }}" class="w-full mt-6 py-3 text-xs font-bold text-primary border border-primary/20 hover:bg-primary/10 rounded-xl transition-all uppercase tracking-widest text-center block">Descargar Informe Completo (CSV)</a>
         </div>
     </div>
+
+    <!-- Cierres de Caja Section -->
+    <div class="grid grid-cols-1 gap-6 mb-10">
+        <div class="bg-surface-container-low border border-white/5 rounded-2xl p-6 shadow-2xl">
+            <h4 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">point_of_sale</span>
+                Cierres de Caja en el Período
+            </h4>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container border-b border-white/5 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                            <th class="p-4">Trabajador</th>
+                            <th class="p-4">Fecha Apertura</th>
+                            <th class="p-4">Fecha Cierre</th>
+                            <th class="p-4 text-right">Monto Inicial</th>
+                            <th class="p-4 text-center">Ventas por Método</th>
+                            <th class="p-4 text-right">Monto Final Real</th>
+                            <th class="p-4 text-right">Diferencia</th>
+                            <th class="p-4">Notas / Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        @forelse($cajasCerradas as $caja)
+                            @php
+                                $diferencia = $caja->monto_final - ($caja->monto_inicial + $caja->ventas_efectivo);
+                                $difColorClass = $diferencia >= 0 ? 'text-emerald-400' : 'text-error';
+                            @endphp
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="p-4 font-bold text-white">{{ $caja->trabajador }}</td>
+                                <td class="p-4 text-slate-300">{{ $caja->fecha_apertura->format('d/m/Y H:i') }}</td>
+                                <td class="p-4 text-slate-300">{{ $caja->fecha_cierre->format('d/m/Y H:i') }}</td>
+                                <td class="p-4 text-right text-slate-300 font-semibold">${{ number_format($caja->monto_inicial, 2) }}</td>
+                                <td class="p-4 text-xs">
+                                    <div class="space-y-1 w-40 mx-auto">
+                                        <div class="flex justify-between text-slate-400">
+                                            <span>💵 Efec:</span>
+                                            <span class="font-bold text-white">${{ number_format($caja->ventas_efectivo, 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-slate-400">
+                                            <span>💳 Tarj:</span>
+                                            <span class="font-semibold text-white">${{ number_format($caja->ventas_tarjeta, 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-slate-400">
+                                            <span>📱 QR:</span>
+                                            <span class="font-semibold text-white">${{ number_format($caja->ventas_qr, 2) }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-right text-white font-bold">${{ number_format($caja->monto_final, 2) }}</td>
+                                <td class="p-4 text-right font-black {{ $difColorClass }}">
+                                    @if($diferencia > 0)+@endif${{ number_format($diferencia, 2) }}
+                                </td>
+                                <td class="p-4 text-xs text-slate-400 max-w-xs truncate" title="{{ $caja->notas }}">
+                                    {{ $caja->notas ?: 'Sin observaciones' }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="p-8 text-center text-slate-500 italic">No se registraron cierres de caja en este período.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

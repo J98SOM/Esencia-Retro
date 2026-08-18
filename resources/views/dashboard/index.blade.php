@@ -108,7 +108,11 @@
                             <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center gap-2">
                                 <span class="text-sm font-bold text-white">${{ number_format($m->latestFactura->monto_total ?? 0, 2) }}</span>
                                 <div class="flex gap-2">
-                                    <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="p-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm" title="Ver pedido">
+                                    @if($activeCaja)
+                                        <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="p-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm" title="Ver pedido">
+                                    @else
+                                        <a href="javascript:void(0)" onclick="openModal('modal-caja-cerrada-alerta')" class="p-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl transition-all flex items-center justify-center shadow-sm" title="Ver pedido">
+                                    @endif
                                         <span class="material-symbols-outlined text-sm">visibility</span>
                                     </a>
                                 </div>
@@ -128,7 +132,11 @@
                                 <span class="text-xs font-medium">{{ $m->capacidad ?? '-' }} personas</span>
                             </div>
                             <div class="mt-4 pt-4 border-t border-white/5">
-                                <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-secondary/20 text-secondary hover:bg-secondary hover:text-white text-center block transition-all shadow-sm">ASIGNAR / PEDIDO</a>
+                                                               @if($activeCaja)
+                                    <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-secondary/20 text-secondary hover:bg-secondary hover:text-white text-center block transition-all shadow-sm">ASIGNAR / PEDIDO</a>
+                                @else
+                                    <a href="javascript:void(0)" onclick="openModal('modal-caja-cerrada-alerta')" class="w-full text-xs font-bold py-2 px-3 rounded-xl border border-secondary/20 text-secondary hover:bg-secondary hover:text-white text-center block transition-all shadow-sm">ASIGNAR / PEDIDO</a>
+                                @endif
                             </div>
                         </div>
                     @endif
@@ -141,7 +149,6 @@
                 </div>
                 @endif
             </div>
-
             @push('scripts')
             <script>
             (function(){
@@ -268,6 +275,28 @@
                 <button type="button" onclick="closeModals()" class="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm">Registrar Mesa</button>
             </div>
         </form>
+    </div>
+    <!-- Alerta Caja Cerrada Modal (Diseño nativo de Esencia Retro) -->
+    <div id="modal-caja-cerrada-alerta" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-black text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-error">warning</span>
+                Caja Cerrada
+            </h3>
+            <button onclick="closeModals()" class="text-outline hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <p class="text-sm text-slate-300 mb-6 leading-relaxed">
+            Hasta que no abran caja no se puede usar el sistema de mesas.
+        </p>
+        <div class="flex gap-3 pt-4 border-t border-white/10">
+            <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Volver</button>
+            <a href="{{ route('admin.caja') }}" class="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm text-center flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">lock_open</span>
+                Abrir Caja
+            </a>
+        </div>
     </div>
 @endpush
 
