@@ -5,7 +5,9 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use App\Models\ProductoXFactura;
+use App\Models\PetacoProducto;
 use App\Observers\ProductoXFacturaObserver;
+use App\Observers\PetacoProductoObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         ProductoXFactura::observe(ProductoXFacturaObserver::class);
+        PetacoProducto::observe(PetacoProductoObserver::class);
 
         // Auto-run schema modification to add es_admin to mesas table without migration files
         try {

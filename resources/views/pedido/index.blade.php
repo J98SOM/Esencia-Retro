@@ -70,19 +70,44 @@
                                 <span class="text-white font-bold ml-2 mr-1 text-lg">x</span>
                             </form>
                             <div>
-                                <p class="font-bold text-white text-lg">{{ $prod->nombre ?? $item->descripcion }}</p>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <p class="font-bold text-white text-lg">{{ $prod->nombre ?? $item->descripcion }}</p>
+                                    @if(($prod && $prod->esPetaco()) || $item->petacoItems->isNotEmpty())
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                            📦 Petaco
+                                        </span>
+                                    @endif
+                                </div>
+                                @if($item->petacoItems->isNotEmpty())
+                                    <div class="mt-1.5 flex flex-wrap gap-1.5 items-center">
+                                        <span class="text-[11px] font-bold text-slate-400">Incluye:</span>
+                                        @foreach($item->petacoItems as $pItem)
+                                            <span class="text-xs text-slate-200 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                <span class="font-bold text-primary">{{ $pItem->cantidad }}x</span>
+                                                {{ $pItem->producto->nombre ?? 'Bebida' }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
                                 <p class="text-slate-500 text-xs mt-1">Precio unitario: ${{ number_format($item->precio_unitario, 0, ',', '.') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t border-white/5 pt-3 sm:pt-0 sm:border-0">
+                        <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t border-white/5 pt-3 sm:pt-0 sm:border-0">
                             <p class="text-lg font-bold text-white">${{ number_format($precioTotal, 0, ',', '.') }}</p>
-                            <form action="{{ route('admin.pedido.delete_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-error hover:text-error-container p-2 rounded-lg bg-error/10 transition-colors">
-                                    <span class="material-symbols-outlined">delete</span>
-                                </button>
-                            </form>
+                            <div class="flex items-center gap-2">
+                                @if(($prod && $prod->esPetaco()) || $item->petacoItems->isNotEmpty())
+                                    <button type="button" onclick="openEditPetacoModal({{ $item->id }}, '{{ addslashes($prod->nombre ?? $item->descripcion) }}', '{{ number_format($item->precio_unitario, 0, ',', '.') }}', {{ json_encode($item->petacoItems->map(fn($pi) => ['producto_id' => $pi->producto_id, 'cantidad' => $pi->cantidad])) }})" class="text-amber-400 hover:text-amber-300 p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors" title="Editar bebidas de este Petaco">
+                                        <span class="material-symbols-outlined text-base">edit_note</span>
+                                    </button>
+                                @endif
+                                <form action="{{ route('admin.pedido.delete_item', ['mesaId' => $mesaId, 'itemId' => $item->id]) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-error hover:text-error-container p-2 rounded-lg bg-error/10 transition-colors">
+                                        <span class="material-symbols-outlined">delete</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 @empty
@@ -122,8 +147,94 @@
     </div>
 </div>
 
+@push('modals')
+<!-- Modal para Editar Bebidas de un Petaco ya ordenado -->
+<div id="modal-edit-ordered-petaco" class="modal-content hidden bg-surface-container-low border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-xl shadow-2xl transform scale-95 transition-transform duration-300 z-50">
+    <div class="flex justify-between items-start mb-4">
+        <div>
+            <h3 class="text-xl font-black text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-400">edit_note</span>
+                <span id="edit-ordered-petaco-title">Editar Bebidas del Petaco</span>
+            </h3>
+            <p class="text-xs text-slate-300 mt-1">
+                Precio fijo del Petaco: <span id="edit-ordered-petaco-price-tag" class="text-primary font-bold"></span>
+            </p>
+            <p class="text-[11px] text-slate-500 mt-0.5">
+                (El precio de la orden no cambia. El inventario de las bebidas se actualizará automáticamente)
+            </p>
+        </div>
+        <button type="button" onclick="closeModals()" class="text-outline hover:text-white transition-colors p-1">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+
+    <form id="form-edit-ordered-petaco" method="POST" action="">
+        @csrf
+        <div class="space-y-3 min-h-[260px] pb-36 overflow-y-auto pr-2" id="edit-ordered-petaco-drinks-list">
+            <!-- Dynamic drink rows -->
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
+            <button type="button" onclick="addEditOrderedPetacoDrinkRow()" class="text-xs text-primary font-bold flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 px-3 py-2 rounded-xl transition-all">
+                <span class="material-symbols-outlined text-sm">add_circle</span> Añadir bebida
+            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="closeModals()" class="py-2.5 px-4 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5 transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" class="py-2.5 px-5 rounded-xl bg-primary text-on-primary font-bold text-xs shadow-lg shadow-primary/20 hover:scale-95 transition-all">
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+@endpush
+
 @push('scripts')
 <script>
+    // Functions for editing ordered petaco modal
+    window.openEditPetacoModal = function(itemId, productName, productPrice, currentItems) {
+        const form = document.getElementById('form-edit-ordered-petaco');
+        form.action = `/admin/mesas/{{ $mesaId }}/pedido/item/${itemId}/petaco-items`;
+        
+        document.getElementById('edit-ordered-petaco-title').textContent = 'Editar Bebidas: ' + productName;
+        document.getElementById('edit-ordered-petaco-price-tag').textContent = '$' + productPrice;
+        
+        const container = document.getElementById('edit-ordered-petaco-drinks-list');
+        container.innerHTML = '';
+        
+        if (currentItems && currentItems.length > 0) {
+            currentItems.forEach(it => {
+                window.addEditOrderedPetacoDrinkRow(it.producto_id, it.cantidad);
+            });
+        } else {
+            window.addEditOrderedPetacoDrinkRow();
+        }
+        
+        openModal('modal-edit-ordered-petaco');
+    };
+
+    window.addEditOrderedPetacoDrinkRow = function(selectedId = null, qty = 1) {
+        const container = document.getElementById('edit-ordered-petaco-drinks-list');
+        if (!container) return;
+        const index = container.children.length;
+        
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 edit-drink-row bg-surface-container-highest/60 p-2.5 sm:p-3 rounded-xl border border-white/5 relative';
+        row.innerHTML = `
+            ${window.renderSearchableDrinkSelectHtml(selectedId, `components[${index}][producto_id]`)}
+            <div class="w-24 sm:w-28 flex-shrink-0 flex items-center gap-1">
+                <span class="text-[11px] text-slate-400 font-bold">Cant:</span>
+                <input type="number" name="components[${index}][cantidad]" min="1" value="${qty}" class="w-full bg-surface-container-low border border-white/10 rounded-xl text-xs sm:text-sm text-white p-2 text-center focus:outline-none focus:border-primary font-bold">
+            </div>
+            <button type="button" onclick="this.closest('.edit-drink-row').remove()" class="text-error hover:text-error-container p-2 rounded-xl bg-error/10 hover:bg-error/20 transition-colors flex-shrink-0" title="Eliminar fila">
+                <span class="material-symbols-outlined text-lg">delete</span>
+            </button>
+        `;
+        container.appendChild(row);
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         // Using global window.showLoader / window.hideLoader from layout
         const showLoader = window.showLoader || (() => {});
@@ -171,13 +282,10 @@
             addProductsForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                // Disable submit button to prevent double submit
                 const submitBtn = this.querySelector('button[type="submit"]');
                 if (submitBtn) submitBtn.disabled = true;
                 
-                // Close popup modal instantly so loader displays cleanly
                 closeModals();
-                
                 showLoader('Añadiendo productos...');
                 
                 const formData = new FormData(this);
@@ -191,8 +299,12 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        // Reset all input quantity fields in the menu modal to 0
                         addProductsForm.querySelectorAll('input[type="number"]').forEach(input => input.value = 0);
+                        document.querySelectorAll('[id^="petaco-badge-count-"]').forEach(b => {
+                            b.textContent = '0';
+                            b.classList.add('hidden');
+                        });
+                        document.querySelectorAll('[id^="petaco-hidden-inputs-"]').forEach(c => c.innerHTML = '');
                         if (data.html) {
                             updateDOMFromHtml(data.html);
                         } else {
@@ -208,16 +320,52 @@
             });
         }
 
+        // AJAX submit for edit ordered petaco form
+        const editOrderedPetacoForm = document.getElementById('form-edit-ordered-petaco');
+        if (editOrderedPetacoForm) {
+            editOrderedPetacoForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                
+                closeModals();
+                showLoader('Actualizando bebidas del petaco...');
+                
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.html) {
+                            updateDOMFromHtml(data.html);
+                        } else {
+                            refreshPedidoUI();
+                        }
+                    }
+                })
+                .catch(err => console.error('Error al actualizar petaco:', err))
+                .finally(() => {
+                    hideLoader();
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+            });
+        }
+
         // Intercept all submit actions on items grid (Delete / Update quantities)
         const pedidoGrid = document.getElementById('pedido-grid');
         if (pedidoGrid) {
             pedidoGrid.addEventListener('submit', function(e) {
                 const form = e.target;
-                // Only intercept POST/DELETE forms inside the grid
                 if (form && form.tagName === 'FORM') {
                     e.preventDefault();
                     
-                    // Disable submit to prevent double submit
                     const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('input[type="submit"]');
                     if (submitBtn) submitBtn.disabled = true;
                     
@@ -244,7 +392,6 @@
                     .catch(err => console.error('Error al actualizar ítem:', err))
                     .finally(() => {
                         hideLoader();
-                        // (Re-enabling isn't strictly necessary if HTML replaces, but good practice)
                         if (submitBtn) submitBtn.disabled = false;
                     });
                 }

@@ -22,4 +22,12 @@ class Producto extends Model
     protected $casts = [
         'precio' => 'decimal:2',
     ];
+
+    /**
+     * Determina si el producto es de tipo Petaco.
+     */
+    public function esPetaco(): bool
+    {
+        return strtolower(trim((string)$this->categoria)) === 'petaco';
+    }
 }

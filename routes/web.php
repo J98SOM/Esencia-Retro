@@ -100,17 +100,32 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // CRUD de Productos (Web)
     Route::get('/productos', function () {
-        $productos = Producto::all();
-        return view('productos.index', compact('productos'));
+        $productos = Producto::orderBy('nombre')->get();
+        $disponiblesParaPetaco = Producto::whereRaw("LOWER(categoria) != 'petaco'")->orderBy('nombre')->get(['id', 'nombre', 'precio']);
+        $categorias = Producto::select('categoria')
+            ->distinct()
+            ->whereNotNull('categoria')
+            ->pluck('categoria')
+            ->filter(fn($c) => strtolower(trim($c)) !== 'petaco' && trim($c) !== '')
+            ->values();
+            
+        return view('productos.index', compact('productos', 'disponiblesParaPetaco', 'categorias'));
     })->name('productos');
 
     Route::post('/productos', function (Request $request) {
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
-            'precio' => 'required|numeric',
+            'precio' => 'required|numeric|min:0',
             'categoria' => 'required|string|max:255',
+            'nueva_categoria' => 'nullable|string|max:255',
             'imagen' => 'nullable|image|max:2048',
         ]);
+
+        // Manejar categoría personalizada si seleccionó "otra"
+        if ($data['categoria'] === 'otra' && !empty($data['nueva_categoria'])) {
+            $data['categoria'] = trim($data['nueva_categoria']);
+        }
+        unset($data['nueva_categoria']);
 
         if ($request->hasFile('imagen')) {
             $uploaded = CloudinaryHelper::upload($request->file('imagen'));
@@ -119,17 +134,25 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
 
         Producto::create($data);
+
         return redirect()->route('admin.productos')->with('success', 'Producto creado correctamente.');
     })->name('productos.store');
 
     Route::post('/productos/{id}', function (Request $request, $id) {
         $producto = Producto::findOrFail($id);
+        
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
-            'precio' => 'required|numeric',
+            'precio' => 'required|numeric|min:0',
             'categoria' => 'required|string|max:255',
+            'nueva_categoria' => 'nullable|string|max:255',
             'imagen' => 'nullable|image|max:2048',
         ]);
+
+        if (isset($data['categoria']) && $data['categoria'] === 'otra' && !empty($data['nueva_categoria'])) {
+            $data['categoria'] = trim($data['nueva_categoria']);
+        }
+        unset($data['nueva_categoria']);
 
         if ($request->hasFile('imagen')) {
             CloudinaryHelper::deleteProductImage($producto);
@@ -139,6 +162,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
 
         $producto->update($data);
+
         return redirect()->route('admin.productos')->with('success', 'Producto actualizado correctamente.');
     })->name('productos.update');
 
@@ -262,7 +286,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Pedidos & Mesas Interaction (No endpoints)
     $renderPedidoHtml = function($mesaId) {
-        $mesa = \App\Models\Mesa::with(['latestFactura.productos.producto'])->findOrFail($mesaId);
+        $mesa = \App\Models\Mesa::with(['latestFactura.productos.producto', 'latestFactura.productos.petacoItems.producto'])->findOrFail($mesaId);
         $factura = $mesa->latestFactura;
         
         $items = [];
@@ -285,7 +309,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
             return redirect()->route('admin.mesas')->with('error', 'La caja se encuentra cerrada. Debes abrir caja para gestionar pedidos.');
         }
-        $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
+        $mesa = Mesa::with(['latestFactura.productos.producto', 'latestFactura.productos.petacoItems.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
         
         $items = [];
@@ -329,6 +353,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $productsInput = $request->input('products', []);
+        $petacoComponents = $request->input('petaco_components', []);
         $singleProductId = $request->input('producto_id');
         $singleQty = intval($request->input('cantidad', 1));
         
@@ -350,14 +375,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $producto = $productos->get($prodId);
             if (!$producto) continue;
             
-            $pxf = $existingItems->get($prodId);
-            if ($pxf) {
-                $pxf->cantidad += $qty;
-                if ($mesa->es_admin) {
-                    $pxf->precio_unitario = 0;
-                }
-                $pxf->save();
-            } else {
+            if ($producto->esPetaco()) {
+                // Cada petaco añadido se registra como un ítem de orden separado con sus propias bebidas
                 $pxf = ProductoXFactura::create([
                     'producto_id' => $producto->id,
                     'factura_id' => $factura->id,
@@ -370,6 +389,44 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
                     'productosxfactura_id' => $pxf->id,
                     'estatus' => 'pendiente',
                 ]);
+
+                // Guardar las bebidas seleccionadas para este Petaco
+                $components = $petacoComponents[$prodId] ?? [];
+                if (is_array($components)) {
+                    foreach ($components as $comp) {
+                        $compId = $comp['producto_id'] ?? null;
+                        $compQty = intval($comp['cantidad'] ?? 0);
+                        if ($compId && $compQty > 0) {
+                            \App\Models\PetacoProducto::create([
+                                'productosxfactura_id' => $pxf->id,
+                                'producto_id' => $compId,
+                                'cantidad' => $compQty,
+                            ]);
+                        }
+                    }
+                }
+            } else {
+                $pxf = $existingItems->get($prodId);
+                if ($pxf) {
+                    $pxf->cantidad += $qty;
+                    if ($mesa->es_admin) {
+                        $pxf->precio_unitario = 0;
+                    }
+                    $pxf->save();
+                } else {
+                    $pxf = ProductoXFactura::create([
+                        'producto_id' => $producto->id,
+                        'factura_id' => $factura->id,
+                        'cantidad' => $qty,
+                        'precio_unitario' => $mesa->es_admin ? 0 : $producto->precio,
+                        'descripcion' => $producto->nombre,
+                    ]);
+                    
+                    \App\Models\EstatusXFactura::create([
+                        'productosxfactura_id' => $pxf->id,
+                        'estatus' => 'pendiente',
+                    ]);
+                }
             }
         }
         
@@ -502,6 +559,46 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Cantidad actualizada.');
     })->name('pedido.update_item');
+
+    Route::post('/mesas/{mesaId}/pedido/item/{itemId}/petaco-items', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
+        $mesa = Mesa::findOrFail($mesaId);
+        $item = ProductoXFactura::with('petacoItems')->findOrFail($itemId);
+        
+        $components = $request->input('components', []);
+        
+        // Eliminar las bebidas anteriores (su observer deleted repone automáticamente el inventario)
+        foreach ($item->petacoItems as $oldPi) {
+            $oldPi->delete();
+        }
+        
+        // Guardar las nuevas bebidas (su observer created descuenta automáticamente el nuevo inventario)
+        if (is_array($components)) {
+            foreach ($components as $comp) {
+                $compId = $comp['producto_id'] ?? null;
+                $compQty = intval($comp['cantidad'] ?? 0);
+                if ($compId && $compQty > 0) {
+                    \App\Models\PetacoProducto::create([
+                        'productosxfactura_id' => $item->id,
+                        'producto_id' => $compId,
+                        'cantidad' => $compQty,
+                    ]);
+                }
+            }
+        }
+        
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $mesaId;
+        $eventMessage = "Se actualizaron las bebidas de {$item->descripcion} en {$mesaNombre}";
+        
+        session()->save();
+        dispatch(function() use ($mesaId, $eventMessage) {
+            event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "actualizado"));
+        })->afterResponse();
+        
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Bebidas del petaco actualizadas.']);
+        }
+        return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Bebidas del petaco actualizadas.');
+    })->name('pedido.update_petaco_items');
 
     Route::get('/mesas/{id}/checkout', function ($id) {
         if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {

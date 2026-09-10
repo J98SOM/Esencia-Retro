@@ -234,8 +234,9 @@
                 Cerrar Sesión
             </a>
         </div>
-           @php
+        @php
             $allProducts = \App\Models\Producto::orderBy('nombre')->get();
+            $beverageProducts = $allProducts->filter(fn($p) => !$p->esPetaco());
         @endphp
         <!-- Añadir Producto a la orden Modal (global) -->
         <div id="modal-add-product-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-6 md:p-8 rounded-2xl w-full max-w-5xl shadow-2xl transform scale-95 transition-transform duration-300 sm:mx-3 sm:my-4 sm:rounded-xl sm:h-[calc(100vh-4rem)] sm:overflow-hidden">
@@ -252,23 +253,55 @@
             <form id="add-products-form" method="POST" action="">
                 @csrf
                 <input type="hidden" name="cantidad" value="1">
-                <div id="productos-grid" class="grid gap-6 max-h-[60vh] overflow-y-auto pr-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
+                <div id="productos-grid" class="grid gap-6 max-h-[60vh] overflow-y-auto pr-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
                     @foreach($allProducts as $p)
-                        <div class="product-card group relative overflow-hidden rounded-xl bg-surface-container-low p-5 md:p-6 transition-all hover:bg-surface-container-high cursor-pointer flex flex-col md:flex-row items-start gap-4" data-name="{{ strtolower($p->nombre) }}">
-                            <div class="w-full md:w-28 h-36 md:h-28 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center flex-shrink-0">
-                                <img src="{{ $p->imagen_url ?? '' }}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
-                            </div>
-                            <div class="flex-1 min-w-0 flex flex-col justify-between relative">
-                                <div>
-                                    <p class="font-bold text-white text-base md:text-lg whitespace-nowrap overflow-visible">{{ $p->nombre }}</p>
-                                    <p class="text-sm md:text-base text-primary font-bold mt-1">${{ number_format($p->precio, 2) }}</p>
+                        @if($p->esPetaco())
+                            <div class="product-card group relative overflow-hidden rounded-xl bg-surface-container-low p-5 md:p-6 transition-all hover:bg-surface-container-high flex flex-col justify-between gap-4 border border-amber-500/20" data-name="{{ strtolower($p->nombre) }}">
+                                <div class="flex flex-col md:flex-row items-start gap-4 w-full">
+                                    <div class="w-full md:w-28 h-36 md:h-28 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center flex-shrink-0">
+                                        <img src="{{ $p->imagen_url ?? '' }}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
+                                    </div>
+                                    <div class="flex-1 min-w-0 flex flex-col justify-between relative w-full h-full">
+                                        <div>
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <p class="font-bold text-white text-base md:text-lg whitespace-nowrap overflow-visible">{{ $p->nombre }}</p>
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">📦 Petaco</span>
+                                            </div>
+                                            <p class="text-sm md:text-base text-primary font-bold mt-1">${{ number_format($p->precio, 2) }}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="mt-4 flex items-center gap-3">
-                                    <label class="text-xs text-slate-500 font-bold">CANTIDAD:</label>
-                                    <input type="number" name="products[{{ $p->id }}]" min="0" value="0" class="w-20 rounded bg-surface-container-highest border border-white/10 text-white text-sm p-1 px-2 text-center focus:outline-none focus:border-primary">
+                                <div class="mt-2 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <label class="text-[11px] text-slate-500 font-bold">CANT:</label>
+                                        <input type="number" name="products[{{ $p->id }}]" id="petaco-qty-{{ $p->id }}" min="0" value="0" class="w-16 rounded bg-surface-container-highest border border-white/10 text-white text-xs p-1.5 text-center focus:outline-none focus:border-primary font-bold">
+                                    </div>
+                                    <button type="button" onclick="openPetacoConfigModal({{ $p->id }}, '{{ addslashes($p->nombre) }}', '{{ number_format($p->precio, 0, ',', '.') }}')" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500 hover:text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm">
+                                        <span class="material-symbols-outlined text-sm">local_bar</span>
+                                        <span>Bebidas</span>
+                                        <span id="petaco-badge-count-{{ $p->id }}" class="hidden bg-amber-400 text-black px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none">0</span>
+                                    </button>
+                                </div>
+                                <!-- Hidden inputs for petaco beverages -->
+                                <div id="petaco-hidden-inputs-{{ $p->id }}"></div>
+                            </div>
+                        @else
+                            <div class="product-card group relative overflow-hidden rounded-xl bg-surface-container-low p-5 md:p-6 transition-all hover:bg-surface-container-high flex flex-col md:flex-row items-start gap-4" data-name="{{ strtolower($p->nombre) }}">
+                                <div class="w-full md:w-28 h-36 md:h-28 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center flex-shrink-0">
+                                    <img src="{{ $p->imagen_url ?? '' }}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
+                                </div>
+                                <div class="flex-1 min-w-0 flex flex-col justify-between relative">
+                                    <div>
+                                        <p class="font-bold text-white text-base md:text-lg whitespace-nowrap overflow-visible">{{ $p->nombre }}</p>
+                                        <p class="text-sm md:text-base text-primary font-bold mt-1">${{ number_format($p->precio, 2) }}</p>
+                                    </div>
+                                    <div class="mt-4 flex items-center gap-3">
+                                        <label class="text-xs text-slate-500 font-bold">CANTIDAD:</label>
+                                        <input type="number" name="products[{{ $p->id }}]" min="0" value="0" class="w-20 rounded bg-surface-container-highest border border-white/10 text-white text-sm p-1 px-2 text-center focus:outline-none focus:border-primary font-bold">
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @endif
                     @endforeach
                 </div>
                 <div class="mt-6 flex justify-end gap-3 border-t border-white/5 pt-4">
@@ -280,6 +313,48 @@
 
         @stack('modals')
 
+    </div>
+
+    <!-- Modal flotante independiente para Configurar Bebidas del Petaco (Abre ENCIMA de todo en móvil y desktop) -->
+    <div id="modal-config-petaco-menu" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] hidden items-center justify-center p-3 sm:p-6 opacity-0 transition-opacity duration-200">
+        <div class="bg-surface-container-low border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-200">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-start p-4 sm:p-6 border-b border-white/5 bg-surface-container">
+                <div class="pr-2">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-amber-400 text-2xl">liquor</span>
+                        <h3 id="cfg-modal-petaco-title" class="text-lg sm:text-xl font-black text-white">Configurar Bebidas</h3>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">
+                        Precio fijo del Petaco: <span id="cfg-modal-petaco-price" class="text-primary font-bold"></span> 
+                        <span class="text-slate-400 block text-[11px] mt-0.5">(Las bebidas seleccionadas solo se descuentan del inventario)</span>
+                    </p>
+                </div>
+                <button type="button" onclick="closePetacoConfigModal()" class="text-outline hover:text-white transition-colors p-1.5 rounded-lg bg-white/5 hover:bg-white/10 flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <!-- Modal Body / Drink List -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3 min-h-[260px] pb-36" id="cfg-modal-drinks-list">
+                <!-- Dynamic drink rows -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 sm:p-6 border-t border-white/5 bg-surface-container/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <button type="button" onclick="addCfgModalDrinkRow()" class="w-full sm:w-auto text-xs text-primary font-bold flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 px-3.5 py-2.5 rounded-xl transition-all">
+                    <span class="material-symbols-outlined text-sm">add_circle</span> Añadir bebida
+                </button>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" onclick="closePetacoConfigModal()" class="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:bg-white/5 transition-all text-center">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="savePetacoConfigModal()" class="flex-1 sm:flex-none py-2.5 px-5 rounded-xl bg-primary text-on-primary font-bold text-xs shadow-lg shadow-primary/20 hover:scale-95 transition-all text-center">
+                        Guardar Selección
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -363,6 +438,208 @@
             }
         });
 
+        // Petaco Dynamic Beverages Handler (Modal-based)
+        const availableBeverages = @json($beverageProducts->map(fn($b) => ['id' => $b->id, 'nombre' => $b->nombre])->values());
+        let currentConfigPetacoId = null;
+        const petacoConfigState = {}; // { [productId]: [ { producto_id, cantidad } ] }
+
+        window.openPetacoConfigModal = function(productId, productName, productPrice) {
+            currentConfigPetacoId = productId;
+            document.getElementById('cfg-modal-petaco-title').textContent = 'Bebidas: ' + productName;
+            document.getElementById('cfg-modal-petaco-price').textContent = '$' + productPrice;
+            
+            const container = document.getElementById('cfg-modal-drinks-list');
+            container.innerHTML = '';
+            
+            const currentItems = petacoConfigState[productId] || [];
+            if (currentItems.length > 0) {
+                currentItems.forEach(item => {
+                    addCfgModalDrinkRow(item.producto_id, item.cantidad);
+                });
+            } else {
+                addCfgModalDrinkRow();
+            }
+            
+            const configModal = document.getElementById('modal-config-petaco-menu');
+            configModal.classList.remove('hidden');
+            configModal.classList.add('flex');
+            requestAnimationFrame(() => {
+                configModal.classList.remove('opacity-0');
+                configModal.classList.add('opacity-100');
+                const inner = configModal.firstElementChild;
+                if (inner) {
+                    inner.classList.remove('scale-95');
+                    inner.classList.add('scale-100');
+                }
+            });
+        };
+
+        window.closePetacoConfigModal = function() {
+            const configModal = document.getElementById('modal-config-petaco-menu');
+            if (!configModal) return;
+            configModal.classList.remove('opacity-100');
+            configModal.classList.add('opacity-0');
+            const inner = configModal.firstElementChild;
+            if (inner) {
+                inner.classList.remove('scale-100');
+                inner.classList.add('scale-95');
+            }
+            setTimeout(() => {
+                configModal.classList.add('hidden');
+                configModal.classList.remove('flex');
+            }, 200);
+        };
+
+        // Searchable Dropdown Helper for Drinks
+        window.renderSearchableDrinkSelectHtml = function(selectedId = null, inputName = '', inputClass = 'searchable-hidden-id') {
+            const selectedProd = availableBeverages.find(b => String(b.id) === String(selectedId));
+            const initialName = selectedProd ? selectedProd.nombre : '';
+            const initialId = selectedProd ? selectedProd.id : '';
+
+            return `
+                <div class="relative flex-1 min-w-0 searchable-drink-box">
+                    <input type="hidden" class="${inputClass}" ${inputName ? `name="${inputName}"` : ''} value="${initialId}">
+                    <div class="relative flex items-center">
+                        <input type="text" class="searchable-drink-input w-full bg-surface-container-low border border-white/10 rounded-xl text-xs sm:text-sm text-white pl-3 pr-8 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-slate-500" value="${escapeHtml(initialName)}" placeholder="Escribe para buscar bebida..." autocomplete="off" onfocus="handleSearchableDrinkFocus(this)" oninput="handleSearchableDrinkInput(this)">
+                        <span class="material-symbols-outlined text-slate-400 absolute right-2.5 pointer-events-none text-base">search</span>
+                    </div>
+                    <div class="searchable-drink-options hidden absolute top-full left-0 right-0 mt-1 bg-surface-container-high border border-white/20 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.95)] max-h-52 overflow-y-auto p-1.5 space-y-1 z-[999] backdrop-blur-2xl">
+                    </div>
+                </div>
+            `;
+        };
+
+        window.handleSearchableDrinkFocus = function(inputEl) {
+            window.handleSearchableDrinkInput(inputEl);
+        };
+
+        window.handleSearchableDrinkInput = function(inputEl) {
+            const box = inputEl.closest('.searchable-drink-box');
+            if (!box) return;
+            const row = inputEl.closest('.cfg-drink-row') || inputEl.closest('.edit-drink-row');
+            const optionsContainer = box.querySelector('.searchable-drink-options');
+            if (!optionsContainer) return;
+            
+            // Close other open searchable dropdowns
+            document.querySelectorAll('.searchable-drink-options').forEach(opt => {
+                if (opt !== optionsContainer) opt.classList.add('hidden');
+            });
+            document.querySelectorAll('.cfg-drink-row, .edit-drink-row').forEach(r => {
+                r.classList.remove('z-30');
+            });
+
+            if (row) row.classList.add('z-30');
+
+            const query = inputEl.value.toLowerCase().trim();
+            const filtered = availableBeverages.filter(b => b.nombre.toLowerCase().includes(query));
+
+            if (filtered.length === 0) {
+                optionsContainer.innerHTML = '<p class="text-xs text-slate-400 p-2.5 text-center">No se encontraron bebidas</p>';
+            } else {
+                optionsContainer.innerHTML = filtered.map(b => `
+                    <button type="button" onclick="selectSearchableDrinkOption(this, ${b.id}, '${escapeHtml(b.nombre)}')" class="w-full text-left px-3 py-2.5 rounded-lg text-xs sm:text-sm text-slate-200 hover:text-white hover:bg-primary/20 hover:border hover:border-primary/30 flex items-center justify-between transition-colors">
+                        <span class="font-medium">${escapeHtml(b.nombre)}</span>
+                    </button>
+                `).join('');
+            }
+
+            optionsContainer.classList.remove('hidden');
+        };
+
+        window.selectSearchableDrinkOption = function(btnEl, prodId, prodName) {
+            const box = btnEl.closest('.searchable-drink-box');
+            if (!box) return;
+            const row = btnEl.closest('.cfg-drink-row') || btnEl.closest('.edit-drink-row');
+            const hiddenInput = box.querySelector('.searchable-hidden-id') || box.querySelector('input[type="hidden"]');
+            const textInput = box.querySelector('.searchable-drink-input');
+            const optionsContainer = box.querySelector('.searchable-drink-options');
+            
+            if (hiddenInput) hiddenInput.value = prodId;
+            if (textInput) textInput.value = prodName;
+            if (optionsContainer) optionsContainer.classList.add('hidden');
+            if (row) row.classList.remove('z-30');
+        };
+
+        // Global click outside to close searchable dropdowns
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-drink-box')) {
+                document.querySelectorAll('.searchable-drink-options').forEach(opt => opt.classList.add('hidden'));
+                document.querySelectorAll('.cfg-drink-row, .edit-drink-row').forEach(r => r.classList.remove('z-30'));
+            }
+        });
+
+        window.addCfgModalDrinkRow = function(selectedId = null, qty = 1) {
+            const container = document.getElementById('cfg-modal-drinks-list');
+            if (!container) return;
+            
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2 cfg-drink-row bg-surface-container-highest/60 p-2.5 sm:p-3 rounded-xl border border-white/5 relative';
+            row.innerHTML = `
+                ${window.renderSearchableDrinkSelectHtml(selectedId, '', 'cfg-drink-id')}
+                <div class="w-24 sm:w-28 flex-shrink-0 flex items-center gap-1">
+                    <span class="text-[11px] text-slate-400 font-bold">Cant:</span>
+                    <input type="number" min="1" value="${qty}" class="cfg-drink-qty w-full bg-surface-container-low border border-white/10 rounded-xl text-xs sm:text-sm text-white p-2 text-center focus:outline-none focus:border-primary font-bold">
+                </div>
+                <button type="button" onclick="this.closest('.cfg-drink-row').remove()" class="text-error hover:text-error-container p-2 rounded-xl bg-error/10 hover:bg-error/20 transition-colors flex-shrink-0" title="Eliminar bebida">
+                    <span class="material-symbols-outlined text-lg">delete</span>
+                </button>
+            `;
+            container.appendChild(row);
+        };
+
+        window.savePetacoConfigModal = function() {
+            if (!currentConfigPetacoId) return;
+            const pId = currentConfigPetacoId;
+            const rows = document.querySelectorAll('#cfg-modal-drinks-list .cfg-drink-row');
+            const items = [];
+            
+            rows.forEach(r => {
+                const idInput = r.querySelector('.cfg-drink-id');
+                const qtyInput = r.querySelector('.cfg-drink-qty');
+                if (idInput && qtyInput) {
+                    const prodId = idInput.value;
+                    const cant = parseInt(qtyInput.value) || 1;
+                    if (prodId && cant > 0) {
+                        items.push({ producto_id: prodId, cantidad: cant });
+                    }
+                }
+            });
+            
+            petacoConfigState[pId] = items;
+            
+            // Inject hidden inputs into form
+            const hiddenContainer = document.getElementById(`petaco-hidden-inputs-${pId}`);
+            if (hiddenContainer) {
+                hiddenContainer.innerHTML = '';
+                items.forEach((item, idx) => {
+                    hiddenContainer.innerHTML += `
+                        <input type="hidden" name="petaco_components[${pId}][${idx}][producto_id]" value="${item.producto_id}">
+                        <input type="hidden" name="petaco_components[${pId}][${idx}][cantidad]" value="${item.cantidad}">
+                    `;
+                });
+            }
+            
+            // Auto-set petaco quantity to 1 if it was 0
+            const qtyInput = document.getElementById(`petaco-qty-${pId}`);
+            if (qtyInput && parseInt(qtyInput.value || 0) <= 0) {
+                qtyInput.value = 1;
+            }
+            
+            // Update badge count
+            const badge = document.getElementById(`petaco-badge-count-${pId}`);
+            if (badge) {
+                const totalBebidas = items.reduce((sum, it) => sum + it.cantidad, 0);
+                if (totalBebidas > 0) {
+                    badge.textContent = totalBebidas;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+            
+            closePetacoConfigModal();
+        };
+
         // API-related functions removed. Carga directa por base de datos en Blade.
 
         function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
@@ -386,6 +663,13 @@
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) closeModals();
         });
+
+        const configModalEl = document.getElementById('modal-config-petaco-menu');
+        if (configModalEl) {
+            configModalEl.addEventListener('click', (e) => {
+                if (e.target === configModalEl) closePetacoConfigModal();
+            });
+        }
 
         // Play a nice retro double chime notification using Web Audio API
         let audioCtxInstance = null;
