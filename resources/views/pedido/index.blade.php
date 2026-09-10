@@ -4,7 +4,8 @@
 
 @section('content')
 @php
-    $isMesero = auth()->user()->rol && auth()->user()->rol->name === 'mesero';
+    $roleName = strtolower(optional(auth()->user()->rol)->name ?? '');
+    $isMesero = in_array($roleName, ['mesero', 'waiter']);
 @endphp
 <div class="p-8 flex-1">
     <!-- Header Section -->
@@ -44,9 +45,9 @@
         @endif
     </header>
 
-    <div class="grid grid-cols-1 @if(!$isMesero) lg:grid-cols-3 @endif gap-8 mb-12">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <!-- Order List (Left/Main) -->
-        <div class="@if(!$isMesero) lg:col-span-2 @endif bg-surface-container-low rounded-2xl p-6 md:p-8 border border-white/5 flex flex-col h-full">
+        <div class="lg:col-span-2 bg-surface-container-low rounded-2xl p-6 md:p-8 border border-white/5 flex flex-col h-full">
             <div class="flex justify-between items-center mb-6">
                 <h4 class="text-xl font-bold text-white">Detalle del Pedido</h4>
                 <button onclick="openModal('modal-add-product-order')" class="text-primary font-bold text-sm flex items-center gap-1 hover:text-primary-fixed-dim transition-colors">
@@ -90,7 +91,6 @@
             </div>
         </div>
 
-        @if(!$isMesero)
         <!-- Order Summary (Right Side) -->
         <aside class="flex flex-col gap-6">
             <div id="pedido-summary" class="bg-surface-container-low rounded-2xl p-8 border border-white/5 group">
@@ -104,26 +104,21 @@
                         <span class="font-bold text-white">${{ number_format($total, 0, ',', '.') }}</span>
                     </div>
                 </div>
-                <div class="pt-6 border-t border-white/5 flex justify-between items-center mb-6">
+                <div class="pt-6 border-t border-white/5 flex justify-between items-center @if(!$isMesero) mb-6 @endif">
                     <span class="text-lg font-bold text-on-surface">Total</span>
                     <span class="text-3xl font-black text-primary">${{ number_format($total, 0, ',', '.') }}</span>
                 </div>
+                @if(!$isMesero)
                 <button onclick="window.location.href='{{ route('admin.checkout', ['id' => $mesaId]) }}'" class="w-full py-4 rounded-xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 hover:scale-[0.98] transition-all">
                     Cobrar Mesa
                 </button>
-            </div>
-
-            <div class="bg-surface-container-low rounded-2xl p-6 border border-white/5 flex gap-4 mt-6">
-                <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                    <span class="material-symbols-outlined text-emerald-400">person</span>
+                @else
+                <div class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5 text-center">
+                    <span class="text-xs text-slate-400 font-medium">Cobro gestionado por Administración / Caja</span>
                 </div>
-                <div>
-                    <h5 class="font-bold text-white text-sm">{{ auth()->user()->name }}</h5>
-                    <p class="text-xs text-on-surface-variant capitalize">{{ optional(auth()->user()->rol)->name ?? 'Mesero' }} en turno</p>
-                </div>
+                @endif
             </div>
         </aside>
-        @endif
     </div>
 </div>
 

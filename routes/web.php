@@ -269,7 +269,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $total = 0;
         if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
             $items = $factura->productos;
-            $total = $mesa->es_admin ? 0 : $factura->monto_total;
+            $total = $mesa->es_admin ? 0 : $items->sum(fn($it) => $it->cantidad * $it->precio_unitario);
         }
 
         return view('pedido.index', [
@@ -292,7 +292,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         $total = 0;
         if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
             $items = $factura->productos;
-            $total = $mesa->es_admin ? 0 : $factura->monto_total;
+            $total = $mesa->es_admin ? 0 : $items->sum(fn($it) => $it->cantidad * $it->precio_unitario);
         }
 
         return view('pedido.index', [
@@ -373,11 +373,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             }
         }
         
-        $factura->monto_total = $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
+        $newTotal = DB::table('productosxfactura')
+            ->where('factura_id', $factura->id)
+            ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+            ->value('total') ?: 0;
+        $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
         $factura->save();
         
-        $mesa = Mesa::find($id);
-        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $id;
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $id;
 
         // Build detailed list of added items for toast notification
         $addedDetails = [];
@@ -403,21 +406,29 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return redirect()->route('admin.pedido', ['id' => $id])->with('success', 'Pedido actualizado.');
     })->name('pedido.add');
 
-    Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function ($mesaId, $itemId) use ($renderPedidoHtml) {
+    Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
+        $mesa = Mesa::findOrFail($mesaId);
         $item = ProductoXFactura::findOrFail($itemId);
         $prodNombre = $item->producto ? $item->producto->nombre : ($item->descripcion ?? 'Producto');
         $factura = $item->factura;
+        
         $item->delete();
         
-        if ($factura->productos()->count() == 0) {
-            $factura->delete();
-        } else {
-            $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
-            $factura->save();
+        if ($factura) {
+            $remainingCount = ProductoXFactura::where('factura_id', $factura->id)->count();
+            if ($remainingCount === 0) {
+                $factura->delete();
+            } else {
+                $newTotal = DB::table('productosxfactura')
+                    ->where('factura_id', $factura->id)
+                    ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+                    ->value('total') ?: 0;
+                $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
+                $factura->save();
+            }
         }
         
-        $mesa = Mesa::find($mesaId);
-        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $mesaId;
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $mesaId;
         $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
         
         session()->save();
@@ -425,28 +436,35 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "eliminado"));
         })->afterResponse();
         
-        if (request()->ajax()) {
+        if ($request->ajax()) {
             return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Producto eliminado.']);
         }
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
     })->name('pedido.delete_item');
 
     Route::post('/mesas/{mesaId}/pedido/item/{itemId}/update', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
+        $mesa = Mesa::findOrFail($mesaId);
         $item = ProductoXFactura::findOrFail($itemId);
         $prodNombre = $item->producto ? $item->producto->nombre : ($item->descripcion ?? 'Producto');
         $factura = $item->factura;
         $cantidad = intval($request->input('cantidad', 1));
         
-        $mesa = Mesa::find($mesaId);
-        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $mesaId;
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $mesaId;
         
         if ($cantidad <= 0) {
             $item->delete();
-            if ($factura->productos()->count() == 0) {
-                $factura->delete();
-            } else {
-                $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
-                $factura->save();
+            if ($factura) {
+                $remainingCount = ProductoXFactura::where('factura_id', $factura->id)->count();
+                if ($remainingCount === 0) {
+                    $factura->delete();
+                } else {
+                    $newTotal = DB::table('productosxfactura')
+                        ->where('factura_id', $factura->id)
+                        ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+                        ->value('total') ?: 0;
+                    $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
+                    $factura->save();
+                }
             }
             $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
             session()->save();
@@ -460,13 +478,19 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $item->cantidad = $cantidad;
-        if ($mesa && $mesa->es_admin) {
+        if ($mesa->es_admin) {
             $item->precio_unitario = 0;
         }
         $item->save();
         
-        $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
-        $factura->save();
+        if ($factura) {
+            $newTotal = DB::table('productosxfactura')
+                ->where('factura_id', $factura->id)
+                ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+                ->value('total') ?: 0;
+            $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
+            $factura->save();
+        }
         
         $eventMessage = "{$prodNombre} cambiado a {$cantidad}x en {$mesaNombre}";
         session()->save();
