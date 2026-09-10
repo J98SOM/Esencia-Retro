@@ -46,6 +46,10 @@
         <button id="btn-filter-ocupadas" data-status="ocupada" class="filter-btn px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Ocupadas (<span id="count-ocupadas">{{ $mesas->filter(fn($m) => $m->latestFactura && !in_array(strtolower($m->latestFactura->estatus), ['pagado', 'pagada']))->count() }}</span>)</button>
     </div>
 
+    @php
+        $activeCaja = $activeCaja ?? (\App\Models\AperturaCaja::where('estado', 'abierta')->exists());
+    @endphp
+
     <!-- Tables Grid (loaded directly from backend) -->
     <div id="mesas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @foreach($mesas as $m)
@@ -78,9 +82,6 @@
                         </div>
                     </div>
                     <div class="pt-4 border-t border-white/5 flex gap-2">
-                        @php
-                            $activeCaja = \App\Models\AperturaCaja::where('estado', 'abierta')->exists();
-                        @endphp
                         @if($m->es_admin && !empty($m->password))
                             @if($activeCaja)
                                 <button onclick="openPasswordModal({{ $m->id }}, '{{ route('admin.pedido', ['id' => $m->id]) }}')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors w-full">Detalles</button>
@@ -152,29 +153,6 @@
             </div>
         </form>
     </div>
-    
-    <!-- Alerta Caja Cerrada Modal -->
-    <div id="modal-caja-cerrada-alerta" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-2xl font-black text-white flex items-center gap-2">
-                <span class="material-symbols-outlined text-error">warning</span>
-                Caja Cerrada
-            </h3>
-            <button onclick="closeModals()" class="text-outline hover:text-white transition-colors">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-        <p class="text-sm text-slate-300 mb-6 leading-relaxed">
-            Hasta que no abran caja no se puede usar el sistema de mesas.
-        </p>
-        <div class="flex gap-3 pt-4 border-t border-white/10">
-            <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Volver</button>
-            <a href="{{ route('admin.caja') }}" class="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm text-center flex items-center justify-center gap-1">
-                <span class="material-symbols-outlined text-sm">lock_open</span>
-                Abrir Caja
-            </a>
-        </div>
-    </div>
 @endpush
 
 @push('scripts')
@@ -187,14 +165,10 @@
         const cards = document.querySelectorAll('.mesa-card-item');
         const filterButtons = document.querySelectorAll('#mesas-filters button');
 
-        // Rebind search input
-        const cleanSearch = searchInput.cloneNode(true);
-        // Copy value over to the clone to preserve user typing
-        cleanSearch.value = searchInput.value;
-        searchInput.parentNode.replaceChild(cleanSearch, searchInput);
-        
+        if (!searchInput) return;
+
         function filterList() {
-            const query = cleanSearch.value.toLowerCase().trim();
+            const query = searchInput.value.toLowerCase().trim();
             cards.forEach(card => {
                 const status = card.getAttribute('data-status') || '';
                 const nombre = card.getAttribute('data-nombre') || '';
@@ -209,16 +183,15 @@
             });
         }
 
-        cleanSearch.addEventListener('input', filterList);
+        searchInput.oninput = filterList;
 
-        // Rebind buttons
         filterButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.onclick = () => {
                 filterButtons.forEach(b => b.classList.remove('bg-primary', 'text-on-primary'));
                 btn.classList.add('bg-primary', 'text-on-primary');
                 currentFilter = btn.getAttribute('data-status');
                 filterList();
-            });
+            };
         });
         
         // Restore active filter button visually

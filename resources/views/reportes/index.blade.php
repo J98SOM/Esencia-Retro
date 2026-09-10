@@ -288,8 +288,8 @@
                             @endphp
                             <tr class="hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold text-white">{{ $caja->trabajador }}</td>
-                                <td class="p-4 text-slate-300">{{ $caja->fecha_apertura->format('d/m/Y H:i') }}</td>
-                                <td class="p-4 text-slate-300">{{ $caja->fecha_cierre->format('d/m/Y H:i') }}</td>
+                                <td class="p-4 text-slate-300">{{ $caja->fecha_apertura ? $caja->fecha_apertura->format('d/m/Y H:i') : '-' }}</td>
+                                <td class="p-4 text-slate-300">{{ $caja->fecha_cierre ? $caja->fecha_cierre->format('d/m/Y H:i') : '-' }}</td>
                                 <td class="p-4 text-right text-slate-300 font-semibold">${{ number_format($caja->monto_inicial, 2) }}</td>
                                 <td class="p-4 text-xs">
                                     <div class="space-y-1 w-40 mx-auto">

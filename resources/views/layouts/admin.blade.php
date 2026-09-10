@@ -145,6 +145,7 @@
             $freeMesas = \App\Models\Mesa::whereDoesntHave('facturas', function($query) {
                 $query->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(estatus)'), ['pagado', 'pagada']);
             })->orderBy('nombre')->get();
+            $hasActiveCaja = \App\Models\AperturaCaja::where('estado', 'abierta')->exists();
         @endphp
         <div id="modal-new-order" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
             <h3 class="text-2xl font-black text-white mb-2">Nueva Orden</h3>
@@ -152,7 +153,11 @@
             
             <div class="space-y-3 mb-6 max-h-64 overflow-y-auto pr-2" id="mesas-list-container">
                 @foreach($freeMesas as $m)
-                    <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex items-center justify-between p-4 rounded-xl border border-white/5 transition-all bg-surface hover:bg-surface-container-highest hover:border-primary/50 group">
+                    @if($hasActiveCaja)
+                        <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex items-center justify-between p-4 rounded-xl border border-white/5 transition-all bg-surface hover:bg-surface-container-highest hover:border-primary/50 group">
+                    @else
+                        <a href="javascript:void(0)" onclick="openModal('modal-caja-cerrada-alerta')" class="flex items-center justify-between p-4 rounded-xl border border-white/5 transition-all bg-surface hover:bg-surface-container-highest hover:border-primary/50 group">
+                    @endif
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                                 <span class="material-symbols-outlined">restaurant</span>
@@ -168,6 +173,38 @@
             
             <div class="flex gap-3 pt-4 border-t border-white/10">
                 <button onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Alerta Caja Cerrada Modal (Global) -->
+        <div id="modal-caja-cerrada-alerta" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-error">warning</span>
+                    Caja Cerrada
+                </h3>
+                <button onclick="closeModals()" class="text-outline hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-slate-300 mb-6 leading-relaxed">
+                Hasta que no se abra la caja, no es posible registrar pedidos ni gestionar órdenes en las mesas.
+            </p>
+            <div class="flex gap-3 pt-4 border-t border-white/10">
+                <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Volver</button>
+                @php
+                    $currentUserRole = strtolower(optional(auth()->user()->rol)->name ?? '');
+                @endphp
+                @if($currentUserRole === 'admin')
+                    <a href="{{ route('admin.caja') }}" class="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl hover:scale-[0.98] transition-transform text-sm text-center flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">lock_open</span>
+                        Abrir Caja
+                    </a>
+                @else
+                    <div class="flex-1 py-3 bg-white/5 text-slate-400 font-bold rounded-xl text-xs text-center flex items-center justify-center">
+                        Pide al Administrador abrir caja
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -269,6 +306,12 @@
         try { window.toggleSidebar = toggleSidebar; window.toggleMobileMenu = toggleMobileMenu; } catch(e){}
 
         window.openModal = function(modalId) {
+            const target = document.getElementById(modalId);
+            if (!target) {
+                console.warn('Modal no encontrado:', modalId);
+                return;
+            }
+
             // Cierra todos primero
             document.querySelectorAll('.modal-content').forEach(m => {
                 m.classList.add('hidden');
@@ -284,7 +327,6 @@
             requestAnimationFrame(() => {
                 modalOverlay.classList.remove('opacity-0');
                 modalOverlay.classList.add('opacity-100');
-                const target = document.getElementById(modalId);
                 // If opening product menu modal, configure form action dynamically
                 if (modalId === 'modal-add-product-order') {
                     const form = document.getElementById('add-products-form');

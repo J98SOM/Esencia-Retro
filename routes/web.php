@@ -201,7 +201,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $mesas = $query->get();
-        return view('admin_mesas.index', compact('mesas'));
+        $activeCaja = \App\Models\AperturaCaja::where('estado', 'abierta')->exists();
+        return view('admin_mesas.index', compact('mesas', 'activeCaja'));
     })->name('mesas');
 
     Route::post('/mesas', function (Request $request) {
@@ -282,7 +283,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::get('/mesas/{id}/pedido', function ($id) {
         if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.mesas')->with('error', 'La caja se encuentra cerrada. Debes abrir caja para gestionar pedidos.');
         }
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
@@ -480,7 +481,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::get('/mesas/{id}/checkout', function ($id) {
         if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.mesas')->with('error', 'La caja se encuentra cerrada. Debes abrir caja para realizar cobros.');
         }
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;

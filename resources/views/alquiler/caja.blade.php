@@ -265,7 +265,12 @@
                 </div>
             </div>
         @endif
+    @endif
+</div>
+@endsection
 
+@push('modals')
+    @if($activeCaja)
         <!-- MODAL DE CIERRE DE CAJA -->
         <div id="modal-cierre-caja" class="modal-content hidden bg-surface-container-low border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
             <h3 class="text-2xl font-black text-white mb-2">Cierre de Caja</h3>
@@ -343,14 +348,13 @@
                 </div>
 
                 <div class="flex gap-3 pt-4 border-t border-white/10">
-                    <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm">Cancelar</button>
+                    <button type="button" onclick="closeModals()" class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
                     <button type="submit" class="flex-1 py-3 rounded-xl bg-error text-on-error hover:bg-error-container transition-all font-bold text-sm">Cerrar Turno</button>
                 </div>
             </form>
         </div>
     @endif
-</div>
-@endsection
+@endpush
 
 @push('scripts')
     <script src="/js/pos-printer.js"></script>
@@ -386,7 +390,7 @@
             }
         }
     @endphp
-@endpush
+
     <script>
         window.COMPANY = {
             name: 'ESENCIA RETRO',
@@ -440,12 +444,4 @@
             }
         });
     </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const modal = document.getElementById('modal-cierre-caja');
-            const overlay = document.getElementById('modal-overlay');
-            if (modal && overlay) {
-                overlay.appendChild(modal);
-            }
-        });
-    </script>
+@endpush
