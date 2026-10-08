@@ -215,7 +215,10 @@
                         </div>
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
-                            <input type="password" id="password" name="password" placeholder="••••••••" class="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
+                            <input type="password" id="password" name="password" placeholder="••••••••" class="w-full pl-12 pr-12 py-4 rounded-xl bg-surface-container-low border border-outline-variant/20 focus:border-primary focus:ring-0 text-on-surface placeholder:text-outline transition-all outline-none">
+                            <button type="button" id="toggle-password" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary focus:outline-none transition-colors p-1 flex items-center justify-center cursor-pointer" title="Mostrar/Ocultar contraseña" aria-label="Mostrar u ocultar contraseña">
+                                <span id="toggle-password-icon" class="material-symbols-outlined text-xl select-none">visibility</span>
+                            </button>
                         </div>
                     </div>
 
@@ -252,7 +255,19 @@
 
     @vite(['resources/js/app.js'])
     <script>
-        // JS Client-side authentication hooks removed as we rely entirely on Laravel session state.
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('toggle-password-icon');
+            if (passwordInput && icon) {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.textContent = 'visibility_off';
+                } else {
+                    passwordInput.type = 'password';
+                    icon.textContent = 'visibility';
+                }
+            }
+        }
     </script>
 </body>
 </html>

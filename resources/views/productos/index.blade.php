@@ -68,19 +68,25 @@
                         @else
                             <div class="w-full h-full flex items-center justify-center text-on-surface-variant">Sin imagen</div>
                         @endif
+                        @if($p->esPetaco())
+                            <div class="absolute top-2 left-2 bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow">
+                                📦 Petaco
+                            </div>
+                        @endif
                     </div>
                     <div class="flex flex-col gap-1 mb-2">
                         <h3 class="text-sm md:text-base font-bold text-white group-hover:text-primary transition-colors truncate" title="{{ $p->nombre }}">{{ $p->nombre }}</h3>
                         <span class="text-sm md:text-base font-black text-primary">${{ number_format($p->precio, 2) }}</span>
                     </div>
                     <p class="text-xs text-on-surface-variant uppercase tracking-widest font-bold mb-4">{{ $p->categoria }}</p>
+
                     <div class="flex items-center justify-between pt-4 border-t border-white/5">
                         <div class="flex items-center text-xs text-on-surface-variant">
                             <span class="material-symbols-outlined text-sm mr-1">inventory_2</span>
                             ID {{ $p->id }}
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="openEditModal({{ $p->id }}, '{{ addslashes($p->nombre) }}', {{ $p->precio }}, '{{ addslashes($p->categoria) }}')"
+                            <button onclick='openEditModal({{ $p->id }}, @json($p->nombre), {{ $p->precio }}, @json($p->categoria))'
                                 class="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 text-white hover:bg-primary/20 hover:text-primary transition-colors">
                                 <span class="material-symbols-outlined text-sm">edit</span>
                             </button>
@@ -123,7 +129,7 @@
                     <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Nombre Comercial</label>
                     <input type="text" name="nombre" required
                         class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
-                        placeholder="Ej. Hamburguesa Wagyu">
+                        placeholder="Ej. Hamburguesa Wagyu o Petaco Pilsen">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -134,10 +140,26 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Categoría</label>
-                        <input name="categoria" type="text" required
-                            class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all" placeholder="Categoría" value="Platos Fuertes">
+                        <select id="add-categoria-select" name="categoria" required
+                            class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                            <option value="" disabled selected>Seleccione categoría</option>
+                            <option value="Petaco" class="font-bold text-primary">📦 Petaco</option>
+                            @foreach($categorias as $cat)
+                                <option value="{{ $cat }}">{{ $cat }}</option>
+                            @endforeach
+                            <option value="otra">+ Otra categoría...</option>
+                        </select>
                     </div>
                 </div>
+
+                <!-- Input si selecciona otra categoría -->
+                <div id="add-otra-categoria-container" class="hidden">
+                    <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Nueva Categoría</label>
+                    <input type="text" name="nueva_categoria" id="add-nueva-categoria"
+                        class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+                        placeholder="Escribe el nombre de la nueva categoría">
+                </div>
+
                 <div class="flex gap-3 pt-4 border-t border-white/10 mt-6">
                     <button type="button" onclick="closeModals()"
                         class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
@@ -181,10 +203,25 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Categoría</label>
-                        <input type="text" id="edit-categoria" name="categoria" required
+                        <select id="edit-categoria-select" name="categoria" required
                             class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all">
+                            <option value="Petaco" class="font-bold text-primary">📦 Petaco</option>
+                            @foreach($categorias as $cat)
+                                <option value="{{ $cat }}">{{ $cat }}</option>
+                            @endforeach
+                            <option value="otra">+ Otra categoría...</option>
+                        </select>
                     </div>
                 </div>
+
+                <!-- Input si selecciona otra categoría en edición -->
+                <div id="edit-otra-categoria-container" class="hidden">
+                    <label class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-1 block">Nueva Categoría</label>
+                    <input type="text" name="nueva_categoria" id="edit-nueva-categoria"
+                        class="w-full bg-surface-container-highest border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-all"
+                        placeholder="Escribe el nombre de la nueva categoría">
+                </div>
+
                 <div class="flex gap-3 pt-6 border-t border-white/10">
                     <button type="button" onclick="closeModals()"
                         class="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-sm text-white">Cancelar</button>
@@ -256,12 +293,62 @@
             });
         }
 
+        // Eventos para el select de categoría en Añadir
+        const addCatSelect = document.getElementById('add-categoria-select');
+        const addOtraContainer = document.getElementById('add-otra-categoria-container');
+
+        if (addCatSelect) {
+            addCatSelect.addEventListener('change', function() {
+                if (this.value === 'otra') {
+                    addOtraContainer.classList.remove('hidden');
+                    document.getElementById('add-nueva-categoria').required = true;
+                } else {
+                    addOtraContainer.classList.add('hidden');
+                    document.getElementById('add-nueva-categoria').required = false;
+                }
+            });
+        }
+
+        // Eventos para el select de categoría en Editar
+        const editCatSelect = document.getElementById('edit-categoria-select');
+        const editOtraContainer = document.getElementById('edit-otra-categoria-container');
+
+        if (editCatSelect) {
+            editCatSelect.addEventListener('change', function() {
+                if (this.value === 'otra') {
+                    editOtraContainer.classList.remove('hidden');
+                    document.getElementById('edit-nueva-categoria').required = true;
+                } else {
+                    editOtraContainer.classList.add('hidden');
+                    document.getElementById('edit-nueva-categoria').required = false;
+                }
+            });
+        }
+
         window.openEditModal = function(id, nombre, precio, categoria) {
             const form = document.getElementById('form-edit-product');
             form.action = "/admin/productos/" + id;
             document.getElementById('edit-nombre').value = nombre;
             document.getElementById('edit-precio').value = precio;
-            document.getElementById('edit-categoria').value = categoria;
+            
+            // Chequear si la categoría actual está en las opciones
+            let foundOption = false;
+            for (let i = 0; i < editCatSelect.options.length; i++) {
+                if (editCatSelect.options[i].value.toLowerCase() === (categoria || '').toLowerCase()) {
+                    editCatSelect.selectedIndex = i;
+                    foundOption = true;
+                    break;
+                }
+            }
+
+            if (!foundOption) {
+                editCatSelect.value = 'otra';
+                editOtraContainer.classList.remove('hidden');
+                document.getElementById('edit-nueva-categoria').value = categoria;
+            } else {
+                editOtraContainer.classList.add('hidden');
+            }
+
             openModal('modal-edit-product');
         };
     })();

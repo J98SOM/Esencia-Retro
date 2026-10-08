@@ -54,7 +54,12 @@ class CajaController extends Controller implements HasMiddleware
         if ($activeCaja) {
             $ventasMetodos = DB::table('metodos_pago')
                 ->join('facturas', 'metodos_pago.factura_id', '=', 'facturas.id')
-                ->where('facturas.id', '>', $activeCaja->last_factura_id)
+                ->where(function ($q) use ($activeCaja) {
+                    $q->where('facturas.id', '>', $activeCaja->last_factura_id)
+                      ->orWhere('metodos_pago.created_at', '>=', $activeCaja->fecha_apertura)
+                      ->orWhere('facturas.updated_at', '>=', $activeCaja->fecha_apertura);
+                })
+                ->whereIn(DB::raw('LOWER(facturas.estatus)'), ['pagado', 'pagada'])
                 ->select('metodos_pago.metodo', DB::raw('SUM(metodos_pago.valor) as total'))
                 ->groupBy('metodos_pago.metodo')
                 ->get();
@@ -62,7 +67,11 @@ class CajaController extends Controller implements HasMiddleware
             $productosVendidos = DB::table('productosxfactura')
                 ->join('facturas', 'productosxfactura.factura_id', '=', 'facturas.id')
                 ->leftJoin('productos', 'productosxfactura.producto_id', '=', 'productos.id')
-                ->where('facturas.id', '>', $activeCaja->last_factura_id)
+                ->where(function ($q) use ($activeCaja) {
+                    $q->where('facturas.id', '>', $activeCaja->last_factura_id)
+                      ->orWhere('facturas.updated_at', '>=', $activeCaja->fecha_apertura);
+                })
+                ->whereIn(DB::raw('LOWER(facturas.estatus)'), ['pagado', 'pagada'])
                 ->select(
                     'productosxfactura.producto_id',
                     DB::raw('COALESCE(productos.nombre, productosxfactura.descripcion) as producto_nombre'),
@@ -130,7 +139,12 @@ class CajaController extends Controller implements HasMiddleware
         // Calcular ventas por método de pago para congelar en base de datos
         $ventasMetodos = DB::table('metodos_pago')
             ->join('facturas', 'metodos_pago.factura_id', '=', 'facturas.id')
-            ->where('facturas.id', '>', $activeCaja->last_factura_id)
+            ->where(function ($q) use ($activeCaja) {
+                $q->where('facturas.id', '>', $activeCaja->last_factura_id)
+                  ->orWhere('metodos_pago.created_at', '>=', $activeCaja->fecha_apertura)
+                  ->orWhere('facturas.updated_at', '>=', $activeCaja->fecha_apertura);
+            })
+            ->whereIn(DB::raw('LOWER(facturas.estatus)'), ['pagado', 'pagada'])
             ->select('metodos_pago.metodo', DB::raw('SUM(metodos_pago.valor) as total'))
             ->groupBy('metodos_pago.metodo')
             ->get();

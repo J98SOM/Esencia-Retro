@@ -46,6 +46,10 @@
         <button id="btn-filter-ocupadas" data-status="ocupada" class="filter-btn px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors font-bold text-sm">Ocupadas (<span id="count-ocupadas">{{ $mesas->filter(fn($m) => $m->latestFactura && !in_array(strtolower($m->latestFactura->estatus), ['pagado', 'pagada']))->count() }}</span>)</button>
     </div>
 
+    @php
+        $activeCaja = $activeCaja ?? (\App\Models\AperturaCaja::where('estado', 'abierta')->exists());
+    @endphp
+
     <!-- Tables Grid (loaded directly from backend) -->
     <div id="mesas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @foreach($mesas as $m)
@@ -79,9 +83,17 @@
                     </div>
                     <div class="pt-4 border-t border-white/5 flex gap-2">
                         @if($m->es_admin && !empty($m->password))
-                            <button onclick="openPasswordModal({{ $m->id }}, '{{ route('admin.pedido', ['id' => $m->id]) }}')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors w-full">Detalles</button>
+                            @if($activeCaja)
+                                <button onclick="openPasswordModal({{ $m->id }}, '{{ route('admin.pedido', ['id' => $m->id]) }}')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors w-full">Detalles</button>
+                            @else
+                                <button type="button" onclick="openModal('modal-caja-cerrada-alerta')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors w-full">Detalles</button>
+                            @endif
                         @else
-                            <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
+                            @if($activeCaja)
+                                <a href="{{ route('admin.pedido', ['id' => $m->id]) }}" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors">Detalles</a>
+                            @else
+                                <button type="button" onclick="openModal('modal-caja-cerrada-alerta')" class="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-center text-[10px] font-bold uppercase tracking-widest block transition-colors w-full">Detalles</button>
+                            @endif
                         @endif
                         @if(auth()->user()->rol && auth()->user()->rol->name === 'admin')
                         <form method="POST" action="{{ route('admin.mesas.delete', ['id' => $m->id]) }}" onsubmit="return confirm('¿Eliminar mesa?')">
@@ -153,14 +165,10 @@
         const cards = document.querySelectorAll('.mesa-card-item');
         const filterButtons = document.querySelectorAll('#mesas-filters button');
 
-        // Rebind search input
-        const cleanSearch = searchInput.cloneNode(true);
-        // Copy value over to the clone to preserve user typing
-        cleanSearch.value = searchInput.value;
-        searchInput.parentNode.replaceChild(cleanSearch, searchInput);
-        
+        if (!searchInput) return;
+
         function filterList() {
-            const query = cleanSearch.value.toLowerCase().trim();
+            const query = searchInput.value.toLowerCase().trim();
             cards.forEach(card => {
                 const status = card.getAttribute('data-status') || '';
                 const nombre = card.getAttribute('data-nombre') || '';
@@ -175,16 +183,15 @@
             });
         }
 
-        cleanSearch.addEventListener('input', filterList);
+        searchInput.oninput = filterList;
 
-        // Rebind buttons
         filterButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.onclick = () => {
                 filterButtons.forEach(b => b.classList.remove('bg-primary', 'text-on-primary'));
                 btn.classList.add('bg-primary', 'text-on-primary');
                 currentFilter = btn.getAttribute('data-status');
                 filterList();
-            });
+            };
         });
         
         // Restore active filter button visually

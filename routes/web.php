@@ -100,17 +100,32 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // CRUD de Productos (Web)
     Route::get('/productos', function () {
-        $productos = Producto::all();
-        return view('productos.index', compact('productos'));
+        $productos = Producto::orderBy('nombre')->get();
+        $disponiblesParaPetaco = Producto::whereRaw("LOWER(categoria) != 'petaco'")->orderBy('nombre')->get(['id', 'nombre', 'precio']);
+        $categorias = Producto::select('categoria')
+            ->distinct()
+            ->whereNotNull('categoria')
+            ->pluck('categoria')
+            ->filter(fn($c) => strtolower(trim($c)) !== 'petaco' && trim($c) !== '')
+            ->values();
+            
+        return view('productos.index', compact('productos', 'disponiblesParaPetaco', 'categorias'));
     })->name('productos');
 
     Route::post('/productos', function (Request $request) {
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
-            'precio' => 'required|numeric',
+            'precio' => 'required|numeric|min:0',
             'categoria' => 'required|string|max:255',
+            'nueva_categoria' => 'nullable|string|max:255',
             'imagen' => 'nullable|image|max:2048',
         ]);
+
+        // Manejar categoría personalizada si seleccionó "otra"
+        if ($data['categoria'] === 'otra' && !empty($data['nueva_categoria'])) {
+            $data['categoria'] = trim($data['nueva_categoria']);
+        }
+        unset($data['nueva_categoria']);
 
         if ($request->hasFile('imagen')) {
             $uploaded = CloudinaryHelper::upload($request->file('imagen'));
@@ -119,17 +134,25 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
 
         Producto::create($data);
+
         return redirect()->route('admin.productos')->with('success', 'Producto creado correctamente.');
     })->name('productos.store');
 
     Route::post('/productos/{id}', function (Request $request, $id) {
         $producto = Producto::findOrFail($id);
+        
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
-            'precio' => 'required|numeric',
+            'precio' => 'required|numeric|min:0',
             'categoria' => 'required|string|max:255',
+            'nueva_categoria' => 'nullable|string|max:255',
             'imagen' => 'nullable|image|max:2048',
         ]);
+
+        if (isset($data['categoria']) && $data['categoria'] === 'otra' && !empty($data['nueva_categoria'])) {
+            $data['categoria'] = trim($data['nueva_categoria']);
+        }
+        unset($data['nueva_categoria']);
 
         if ($request->hasFile('imagen')) {
             CloudinaryHelper::deleteProductImage($producto);
@@ -139,6 +162,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
 
         $producto->update($data);
+
         return redirect()->route('admin.productos')->with('success', 'Producto actualizado correctamente.');
     })->name('productos.update');
 
@@ -201,7 +225,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $mesas = $query->get();
-        return view('admin_mesas.index', compact('mesas'));
+        $activeCaja = \App\Models\AperturaCaja::where('estado', 'abierta')->exists();
+        return view('admin_mesas.index', compact('mesas', 'activeCaja'));
     })->name('mesas');
 
     Route::post('/mesas', function (Request $request) {
@@ -261,14 +286,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Pedidos & Mesas Interaction (No endpoints)
     $renderPedidoHtml = function($mesaId) {
-        $mesa = \App\Models\Mesa::with(['latestFactura.productos.producto'])->findOrFail($mesaId);
+        $mesa = \App\Models\Mesa::with(['latestFactura.productos.producto', 'latestFactura.productos.petacoItems.producto'])->findOrFail($mesaId);
         $factura = $mesa->latestFactura;
         
         $items = [];
         $total = 0;
         if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
             $items = $factura->productos;
-            $total = $mesa->es_admin ? 0 : $factura->monto_total;
+            $total = $mesa->es_admin ? 0 : $items->sum(fn($it) => $it->cantidad * $it->precio_unitario);
         }
 
         return view('pedido.index', [
@@ -282,16 +307,16 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::get('/mesas/{id}/pedido', function ($id) {
         if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.mesas')->with('error', 'La caja se encuentra cerrada. Debes abrir caja para gestionar pedidos.');
         }
-        $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
+        $mesa = Mesa::with(['latestFactura.productos.producto', 'latestFactura.productos.petacoItems.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;
         
         $items = [];
         $total = 0;
         if ($factura && !in_array(strtolower($factura->estatus), ['pagado', 'pagada'])) {
             $items = $factura->productos;
-            $total = $mesa->es_admin ? 0 : $factura->monto_total;
+            $total = $mesa->es_admin ? 0 : $items->sum(fn($it) => $it->cantidad * $it->precio_unitario);
         }
 
         return view('pedido.index', [
@@ -328,6 +353,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $productsInput = $request->input('products', []);
+        $petacoComponents = $request->input('petaco_components', []);
         $singleProductId = $request->input('producto_id');
         $singleQty = intval($request->input('cantidad', 1));
         
@@ -349,14 +375,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             $producto = $productos->get($prodId);
             if (!$producto) continue;
             
-            $pxf = $existingItems->get($prodId);
-            if ($pxf) {
-                $pxf->cantidad += $qty;
-                if ($mesa->es_admin) {
-                    $pxf->precio_unitario = 0;
-                }
-                $pxf->save();
-            } else {
+            if ($producto->esPetaco()) {
+                // Cada petaco añadido se registra como un ítem de orden separado con sus propias bebidas
                 $pxf = ProductoXFactura::create([
                     'producto_id' => $producto->id,
                     'factura_id' => $factura->id,
@@ -369,14 +389,55 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
                     'productosxfactura_id' => $pxf->id,
                     'estatus' => 'pendiente',
                 ]);
+
+                // Guardar las bebidas seleccionadas para este Petaco
+                $components = $petacoComponents[$prodId] ?? [];
+                if (is_array($components)) {
+                    foreach ($components as $comp) {
+                        $compId = $comp['producto_id'] ?? null;
+                        $compQty = intval($comp['cantidad'] ?? 0);
+                        if ($compId && $compQty > 0) {
+                            \App\Models\PetacoProducto::create([
+                                'productosxfactura_id' => $pxf->id,
+                                'producto_id' => $compId,
+                                'cantidad' => $compQty,
+                            ]);
+                        }
+                    }
+                }
+            } else {
+                $pxf = $existingItems->get($prodId);
+                if ($pxf) {
+                    $pxf->cantidad += $qty;
+                    if ($mesa->es_admin) {
+                        $pxf->precio_unitario = 0;
+                    }
+                    $pxf->save();
+                } else {
+                    $pxf = ProductoXFactura::create([
+                        'producto_id' => $producto->id,
+                        'factura_id' => $factura->id,
+                        'cantidad' => $qty,
+                        'precio_unitario' => $mesa->es_admin ? 0 : $producto->precio,
+                        'descripcion' => $producto->nombre,
+                    ]);
+                    
+                    \App\Models\EstatusXFactura::create([
+                        'productosxfactura_id' => $pxf->id,
+                        'estatus' => 'pendiente',
+                    ]);
+                }
             }
         }
         
-        $factura->monto_total = $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
+        $newTotal = DB::table('productosxfactura')
+            ->where('factura_id', $factura->id)
+            ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+            ->value('total') ?: 0;
+        $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
         $factura->save();
         
-        $mesa = Mesa::find($id);
-        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $id;
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $id;
 
         // Build detailed list of added items for toast notification
         $addedDetails = [];
@@ -402,21 +463,29 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return redirect()->route('admin.pedido', ['id' => $id])->with('success', 'Pedido actualizado.');
     })->name('pedido.add');
 
-    Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function ($mesaId, $itemId) use ($renderPedidoHtml) {
+    Route::delete('/mesas/{mesaId}/pedido/item/{itemId}', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
+        $mesa = Mesa::findOrFail($mesaId);
         $item = ProductoXFactura::findOrFail($itemId);
         $prodNombre = $item->producto ? $item->producto->nombre : ($item->descripcion ?? 'Producto');
         $factura = $item->factura;
+        
         $item->delete();
         
-        if ($factura->productos()->count() == 0) {
-            $factura->delete();
-        } else {
-            $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
-            $factura->save();
+        if ($factura) {
+            $remainingCount = ProductoXFactura::where('factura_id', $factura->id)->count();
+            if ($remainingCount === 0) {
+                $factura->delete();
+            } else {
+                $newTotal = DB::table('productosxfactura')
+                    ->where('factura_id', $factura->id)
+                    ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+                    ->value('total') ?: 0;
+                $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
+                $factura->save();
+            }
         }
         
-        $mesa = Mesa::find($mesaId);
-        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $mesaId;
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $mesaId;
         $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
         
         session()->save();
@@ -424,28 +493,35 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
             event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "eliminado"));
         })->afterResponse();
         
-        if (request()->ajax()) {
+        if ($request->ajax()) {
             return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Producto eliminado.']);
         }
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Producto eliminado.');
     })->name('pedido.delete_item');
 
     Route::post('/mesas/{mesaId}/pedido/item/{itemId}/update', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
+        $mesa = Mesa::findOrFail($mesaId);
         $item = ProductoXFactura::findOrFail($itemId);
         $prodNombre = $item->producto ? $item->producto->nombre : ($item->descripcion ?? 'Producto');
         $factura = $item->factura;
         $cantidad = intval($request->input('cantidad', 1));
         
-        $mesa = Mesa::find($mesaId);
-        $mesaNombre = $mesa ? $mesa->nombre : "Mesa " . $mesaId;
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $mesaId;
         
         if ($cantidad <= 0) {
             $item->delete();
-            if ($factura->productos()->count() == 0) {
-                $factura->delete();
-            } else {
-                $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
-                $factura->save();
+            if ($factura) {
+                $remainingCount = ProductoXFactura::where('factura_id', $factura->id)->count();
+                if ($remainingCount === 0) {
+                    $factura->delete();
+                } else {
+                    $newTotal = DB::table('productosxfactura')
+                        ->where('factura_id', $factura->id)
+                        ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+                        ->value('total') ?: 0;
+                    $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
+                    $factura->save();
+                }
             }
             $eventMessage = "Se quitó {$prodNombre} de {$mesaNombre}";
             session()->save();
@@ -459,13 +535,19 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         }
         
         $item->cantidad = $cantidad;
-        if ($mesa && $mesa->es_admin) {
+        if ($mesa->es_admin) {
             $item->precio_unitario = 0;
         }
         $item->save();
         
-        $factura->monto_total = $mesa && $mesa->es_admin ? 0 : ($factura->productos()->selectRaw('SUM(cantidad * precio_unitario) as total')->value('total') ?? 0);
-        $factura->save();
+        if ($factura) {
+            $newTotal = DB::table('productosxfactura')
+                ->where('factura_id', $factura->id)
+                ->selectRaw('COALESCE(SUM(cantidad * precio_unitario), 0) as total')
+                ->value('total') ?: 0;
+            $factura->monto_total = $mesa->es_admin ? 0 : (float) $newTotal;
+            $factura->save();
+        }
         
         $eventMessage = "{$prodNombre} cambiado a {$cantidad}x en {$mesaNombre}";
         session()->save();
@@ -478,9 +560,49 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Cantidad actualizada.');
     })->name('pedido.update_item');
 
+    Route::post('/mesas/{mesaId}/pedido/item/{itemId}/petaco-items', function (Request $request, $mesaId, $itemId) use ($renderPedidoHtml) {
+        $mesa = Mesa::findOrFail($mesaId);
+        $item = ProductoXFactura::with('petacoItems')->findOrFail($itemId);
+        
+        $components = $request->input('components', []);
+        
+        // Eliminar las bebidas anteriores (su observer deleted repone automáticamente el inventario)
+        foreach ($item->petacoItems as $oldPi) {
+            $oldPi->delete();
+        }
+        
+        // Guardar las nuevas bebidas (su observer created descuenta automáticamente el nuevo inventario)
+        if (is_array($components)) {
+            foreach ($components as $comp) {
+                $compId = $comp['producto_id'] ?? null;
+                $compQty = intval($comp['cantidad'] ?? 0);
+                if ($compId && $compQty > 0) {
+                    \App\Models\PetacoProducto::create([
+                        'productosxfactura_id' => $item->id,
+                        'producto_id' => $compId,
+                        'cantidad' => $compQty,
+                    ]);
+                }
+            }
+        }
+        
+        $mesaNombre = $mesa->nombre ?: "Mesa " . $mesaId;
+        $eventMessage = "Se actualizaron las bebidas de {$item->descripcion} en {$mesaNombre}";
+        
+        session()->save();
+        dispatch(function() use ($mesaId, $eventMessage) {
+            event(new \App\Events\PedidoActualizado($mesaId, $eventMessage, "actualizado"));
+        })->afterResponse();
+        
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $renderPedidoHtml($mesaId), 'message' => 'Bebidas del petaco actualizadas.']);
+        }
+        return redirect()->route('admin.pedido', ['id' => $mesaId])->with('success', 'Bebidas del petaco actualizadas.');
+    })->name('pedido.update_petaco_items');
+
     Route::get('/mesas/{id}/checkout', function ($id) {
         if (!\App\Models\AperturaCaja::where('estado', 'abierta')->exists()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.mesas')->with('error', 'La caja se encuentra cerrada. Debes abrir caja para realizar cobros.');
         }
         $mesa = Mesa::with(['latestFactura.productos.producto'])->findOrFail($id);
         $factura = $mesa->latestFactura;

@@ -29,4 +29,9 @@ class ProductoXFactura extends Model
     {
         return $this->hasOne(EstatusXFactura::class, 'productosxfactura_id');
     }
+
+    public function petacoItems()
+    {
+        return $this->hasMany(PetacoProducto::class, 'productosxfactura_id');
+    }
 }
